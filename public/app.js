@@ -3,7 +3,7 @@ const uploadedFiles = [];
 let totalLoadedPages = 0;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "/pdfjs/pdf.worker.min.js";
+    "./pdfjs/pdf.worker.min.js";
 
 const fileInput = document.getElementById("pdfFile");
 const pagesDiv = document.getElementById("pages");
