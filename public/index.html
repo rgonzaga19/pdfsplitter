@@ -23,6 +23,12 @@
     <span id="fileLabel" class="file-label">No file chosen</span>
 
     <button
+        id="refreshBtn"
+    >
+        <span class="material-symbols-rounded">refresh</span>
+    </button>
+
+    <button
         id="splitBtn"
         disabled
     >
@@ -34,6 +40,16 @@
 <div id="stats"></div>
 
 <div id="pages"></div>
+
+<div id="successMessage" class="success-message" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="success-message-content">
+        <span class="material-symbols-rounded success-icon">check_circle</span>
+        <h2 id="successTitle">Split successful</h2>
+        <p>Your split PDF files have been downloaded as a ZIP file.</p>
+        <button id="successOkBtn" type="button">Okay</button>
+    </div>
+</div>
+
 <div id="previewModal" class="modal">
 
     <span id="closeModal">&times;</span>
@@ -44,11 +60,17 @@
             <span class="material-symbols-rounded">chevron_left</span>
         </button>
 
+        <button id="rotatePreviewBtn" class="preview-rotate">
+            <span class="material-symbols-rounded">rotate_right</span>
+        </button>
+
         <canvas id="previewCanvas"></canvas>
 
         <button id="nextPreviewBtn" class="preview-nav">
             <span class="material-symbols-rounded">chevron_right</span>
         </button>
+
+
 
     </div>
 
