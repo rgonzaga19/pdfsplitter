@@ -30,6 +30,17 @@ const previewState = {
     currentIndex: 0,
     totalPages: 0
 };
+const PREVIEW_MAX_SCALE = 2.25;
+
+function getPreviewAvailableSize() {
+    const horizontalChrome = window.innerWidth <= 720 ? 40 : 160;
+    const verticalChrome = window.innerWidth <= 720 ? 88 : 112;
+
+    return {
+        width: Math.max(280, window.innerWidth - horizontalChrome),
+        height: Math.max(320, window.innerHeight - verticalChrome)
+    };
+}
 
 function showSuccessMessage() {
     successMessage.classList.add("show");
@@ -76,16 +87,40 @@ async function renderPreviewPage(globalIndex) {
     if (!ref) return;
 
     const page = await ref.pdf.getPage(ref.pageNumber);
-    const viewport = page.getViewport({ scale: 0.9 });
+    const baseViewport = page.getViewport({ scale: 1 });
+    const availableSize = getPreviewAvailableSize();
+    const rawCssScale = Math.min(
+        PREVIEW_MAX_SCALE,
+        availableSize.width / baseViewport.width,
+        availableSize.height / baseViewport.height
+    );
+    const targetCssWidth = Math.floor(baseViewport.width * rawCssScale);
+    const targetCssHeight = Math.floor(baseViewport.height * rawCssScale);
+    const cssScale = Math.min(
+        targetCssWidth / baseViewport.width,
+        targetCssHeight / baseViewport.height
+    );
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 3);
+    const viewport = page.getViewport({ scale: cssScale });
     const ctx = previewCanvas.getContext("2d");
+    const displayWidth = Math.floor(viewport.width);
+    const displayHeight = Math.floor(viewport.height);
 
-    previewCanvas.width = viewport.width;
-    previewCanvas.height = viewport.height;
+    previewCanvas.width = Math.floor(displayWidth * pixelRatio);
+    previewCanvas.height = Math.floor(displayHeight * pixelRatio);
+    previewCanvas.style.width = `${displayWidth}px`;
+    previewCanvas.style.height = `${displayHeight}px`;
 
-    await page.render({
+    const renderContext = {
         canvasContext: ctx,
         viewport
-    }).promise;
+    };
+
+    if (pixelRatio !== 1) {
+        renderContext.transform = [pixelRatio, 0, 0, pixelRatio, 0, 0];
+    }
+
+    await page.render(renderContext).promise;
 
     previewState.currentIndex = globalIndex;
     updatePreviewNavigation();
@@ -119,6 +154,15 @@ function applyCanvasRotation(canvas, rotation) {
         const rotatedHeight = rotatedSideways ? canvasWidth : canvasHeight;
 
         scale = Math.min(1, availableWidth / rotatedWidth, availableHeight / rotatedHeight);
+    } else if (canvas === previewCanvas && previewModal.style.display !== 'none') {
+        const availableSize = getPreviewAvailableSize();
+        const canvasWidth = canvas.offsetWidth || canvas.width;
+        const canvasHeight = canvas.offsetHeight || canvas.height;
+        const rotatedSideways = normalized === 90 || normalized === 270;
+        const rotatedWidth = rotatedSideways ? canvasHeight : canvasWidth;
+        const rotatedHeight = rotatedSideways ? canvasWidth : canvasHeight;
+
+        scale = Math.min(1, availableSize.width / rotatedWidth, availableSize.height / rotatedHeight);
     }
 
     canvas.style.transformOrigin = 'center center';
