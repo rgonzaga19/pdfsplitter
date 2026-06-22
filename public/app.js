@@ -1,4 +1,3 @@
-
 const uploadedFiles = [];
 let totalLoadedPages = 0;
 
@@ -6,6 +5,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
     "./pdfjs/pdf.worker.min.js";
 
 const fileInput = document.getElementById("pdfFile");
+const uploadZone = document.querySelector(".upload-zone");
 const pagesDiv = document.getElementById("pages");
 const splitBtn = document.getElementById("splitBtn");
 const refreshBtn = document.getElementById("refreshBtn");
@@ -17,10 +17,7 @@ const nextPreviewBtn = document.getElementById("nextPreviewBtn");
 const rotatePreviewBtn = document.getElementById("rotatePreviewBtn");
 const successMessage = document.getElementById("successMessage");
 const successOkBtn = document.getElementById("successOkBtn");
-
-
-
-
+const contentWrapper = document.getElementById("contentWrapper");
 
 const loadedPdfs = [];
 const pageOrder = [];
@@ -258,6 +255,21 @@ function getValidSplitPoints(totalPages) {
         .sort((a, b) => a - b);
 }
 
+function updateStatsDisplay() {
+    if (!stats) return;
+    
+    stats.innerHTML = `
+        <div class="stat">
+            <div class="stat-value">${pageOrder.length}</div>
+            <div class="stat-label">Total Pages</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">${splitPoints.length}</div>
+            <div class="stat-label">Split Points</div>
+        </div>
+    `;
+}
+
 function syncPageOrderFromDom() {
     const wrappers = getPageWrappers();
     const newOrder = wrappers
@@ -271,7 +283,7 @@ function syncPageOrderFromDom() {
     updatePageLabels();
     rebuildSplitPointsFromMarkers();
     previewState.totalPages = pageOrder.length;
-    stats.innerHTML = `<h3>${pageOrder.length} pages loaded</h3>`;
+    updateStatsDisplay();
 }
 
 async function duplicatePageWrapper(sourceWrapper) {
@@ -372,6 +384,8 @@ async function duplicatePageWrapper(sourceWrapper) {
             splitPoints.sort((a, b) => a - b);
             newMarker.classList.add('active');
         }
+
+        updateStatsDisplay();
     });
     newWrapper.appendChild(newMarker);
 
@@ -475,6 +489,73 @@ pagesDiv.addEventListener('drop', (e) => {
     }
 });
 
+/* ============================================
+   DRAG AND DROP PDF UPLOAD
+   ============================================ */
+
+// Prevent default drag behaviors on the page
+document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+});
+
+document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+});
+
+// Highlight upload zone on dragover
+uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadZone.classList.add('drag-over');
+});
+
+uploadZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadZone.classList.remove('drag-over');
+});
+
+// Handle dropped files
+uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadZone.classList.remove('drag-over');
+
+    const droppedFiles = e.dataTransfer.files;
+    
+    if (!droppedFiles || droppedFiles.length === 0) {
+        return;
+    }
+
+    // Filter for PDF files only
+    const pdfFiles = Array.from(droppedFiles).filter(file => {
+        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (!isPdf) {
+            console.warn(`Skipped non-PDF file: ${file.name}`);
+        }
+        return isPdf;
+    });
+
+    if (pdfFiles.length === 0) {
+        alert('Please drop PDF files only. No valid PDF files were found.');
+        return;
+    }
+
+    // Process each PDF file
+    pdfFiles.forEach(file => {
+        // Trigger the file input change event logic for each file
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        
+        // Manually trigger the change event
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+    });
+});
+
 prevPreviewBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
     if (previewState.currentIndex > 1) {
@@ -517,7 +598,7 @@ splitBtn.addEventListener("click", async () => {
 
     isSplitting = true;
     splitBtn.disabled = true;
-    splitBtn.textContent = "Splitting...";
+    splitBtn.innerHTML = '<span class="material-symbols-rounded">schedule</span><span class="btn-label">Splitting...</span>';
 
     try {
     const sourcePdfs = [];
@@ -602,7 +683,7 @@ splitBtn.addEventListener("click", async () => {
     } finally {
     isSplitting = false;
     splitBtn.disabled = uploadedFiles.length === 0;
-    splitBtn.textContent = "Split PDF";
+    splitBtn.innerHTML = '<span class="material-symbols-rounded">cloud_download</span><span class="btn-label">Split & Download</span>';
     }
 
 });
@@ -624,6 +705,7 @@ function resetAll() {
     // Reset UI
     pagesDiv.innerHTML = "";
     stats.innerHTML = "";
+    contentWrapper.style.display = "none";
 
     fileLabel.textContent = "No file chosen";
 
@@ -674,8 +756,9 @@ fileInput.addEventListener("change", async (e) => {
     const startPageNumber = totalLoadedPages;
     totalLoadedPages += pdf.numPages;
     previewState.totalPages = totalLoadedPages;
-    stats.innerHTML =
-    `<h3>${totalLoadedPages} pages loaded</h3>`;
+
+    // SHOW CONTENT SECTION WHEN PDF LOADS
+    contentWrapper.style.display = "block";
     
     splitBtn.disabled = false;
 
@@ -915,6 +998,8 @@ fileInput.addEventListener("change", async (e) => {
                     splitPoints.sort((a, b) => a - b);
                     newMarker.classList.add('active');
                 }
+
+                updateStatsDisplay();
             });
             newWrapper.appendChild(newMarker);
 
@@ -1007,7 +1092,7 @@ fileInput.addEventListener("change", async (e) => {
                 marker.classList.add('active');
             }
 
-            console.log('Split Points:', splitPoints);
+            updateStatsDisplay();
         });
 
         pageWrapper.appendChild(marker);
@@ -1042,4 +1127,7 @@ fileInput.addEventListener("change", async (e) => {
         fileInput.click();
     });
     pagesDiv.appendChild(addPageWrapper);
+
+    // UPDATE STATS AFTER LOADING
+    updateStatsDisplay();
 });
