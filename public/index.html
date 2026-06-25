@@ -14,61 +14,109 @@
 </head>
 <body>
 
-<!-- HERO SECTION -->
-<header class="hero-section">
-    <div class="hero-content">
-        <div class="hero-badge">PDF TOOLS</div>
-        <h1 class="hero-title">Split PDFs with Precision</h1>
-        <p class="hero-subtitle">Extract pages, organize documents, and download as separate files. Fast, intuitive, and completely free.</p>
-    </div>
-</header>
+<!-- PAGE 1: LANDING -->
+<div id="landingPage" class="page-landing">
 
-<!-- MAIN CONTENT -->
-<main class="main-container">
-
-    <!-- UPLOAD SECTION -->
-    <section class="upload-section">
-        <div class="upload-card">
-            <input
-                type="file"
-                id="pdfFile"
-                accept=".pdf"
-                hidden
-            >
-            <label for="pdfFile" class="upload-zone">
-                <div class="upload-icon">
-                    <span class="material-symbols-rounded">description</span>
-                </div>
-                <h2 class="upload-title">Choose a PDF to split</h2>
-                <p class="upload-subtitle">Or drag and drop your file here</p>
-                <span id="fileLabel" class="file-label">No file chosen</span>
-            </label>
+    <!-- HERO SECTION -->
+    <header class="hero-section">
+        <div class="hero-content">
+            <div class="hero-badge">PDF TOOLS</div>
+            <h1 class="hero-title">Split PDFs with Precision</h1>
+            <p class="hero-subtitle">Extract pages, organize documents, and download as separate files. Fast, intuitive, and completely free.</p>
         </div>
+    </header>
 
-        <div class="toolbar">
+    <!-- MAIN CONTENT -->
+    <main class="main-container">
+
+        <!-- UPLOAD SECTION -->
+        <section class="upload-section">
+            <div class="upload-card">
+                <input
+                    type="file"
+                    id="pdfFile"
+                    accept=".pdf"
+                    hidden
+                >
+                <label for="pdfFile" class="upload-zone">
+                    <div class="upload-icon">
+                        <span class="material-symbols-rounded">description</span>
+                    </div>
+                    <h2 class="upload-title">Choose a PDF to split</h2>
+                    <p class="upload-subtitle">Or drag and drop your file here</p>
+                    <span id="fileLabel" class="file-label">No file chosen</span>
+                </label>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="landing-footer">
+        <div class="footer-inner">
+            <hr class="footer-rule">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="material-symbols-rounded footer-brand-icon">picture_as_pdf</span>
+                    <span class="footer-brand-name">PDF Splitter</span>
+                    <span class="footer-version">v1.0.3</span>
+                </div>
+                <div class="footer-meta">
+                    <span>&copy; 2026 PDF Splitter &mdash; All rights reserved</span>
+                    <span class="footer-dot">·</span>
+                    <span>Developed by <strong>Romel Gonzaga</strong></span>
+                    <span class="footer-dot">·</span>
+                    <span>Free &amp; open to use</span>
+                </div>
+                <div class="footer-links">
+                    <a href="info.html#about" class="footer-link">
+                        <span class="material-symbols-rounded">info</span>About
+                    </a>
+                    <a href="info.html#privacy" class="footer-link">
+                        <span class="material-symbols-rounded">lock</span>Privacy
+                    </a>
+                    <a href="info.html#contact" class="footer-link">
+                        <span class="material-symbols-rounded">mail</span>Contact
+                    </a>
+                </div>
+            </div>
+            <hr class="footer-rule footer-rule--bottom">
+            <p class="footer-note">All PDF processing happens locally in your browser. Your files are never uploaded to any server.</p>
+        </div>
+    </footer>
+
+</div>
+
+<!-- PAGE 2: EDITOR -->
+<div id="editorPage" class="page-editor" style="display: none;">
+
+    <!-- EDITOR HEADER / TOOLBAR -->
+    <header class="editor-header">
+        <div class="editor-header-left">
+            <span class="material-symbols-rounded editor-logo-icon">picture_as_pdf</span>
+            <span class="editor-title">PDF Splitter</span>
+        </div>
+        <div class="editor-header-stats">
+            <div id="stats" class="stats-container"></div>
+        </div>
+        <div class="editor-header-actions">
             <button id="refreshBtn" class="btn btn-secondary" title="Clear and start over">
                 <span class="material-symbols-rounded">refresh</span>
                 <span class="btn-label">Clear</span>
             </button>
-
             <button id="splitBtn" class="btn btn-primary" disabled>
                 <span class="material-symbols-rounded">cloud_download</span>
                 <span class="btn-label">Split & Download</span>
             </button>
         </div>
-    </section>
+    </header>
 
-    <!-- STATS & PAGES SECTION -->
-    <section class="content-section" id="contentWrapper" style="display: none;">
-        <div class="section-header">
-            <h2>Your Pages</h2>
-            <div id="stats" class="stats-container"></div>
-        </div>
-
+    <!-- PAGES AREA -->
+    <div class="editor-body">
         <div id="pages" class="pages-grid"></div>
-    </section>
+    </div>
 
-</main>
+</div>
 
 <!-- SUCCESS MESSAGE MODAL -->
 <div id="successMessage" class="success-message" role="dialog" aria-modal="true" aria-labelledby="successTitle">

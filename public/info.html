@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Splitter — Info</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        /* ── Info page shell ── */
+        .info-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Top nav bar ── */
+        .info-nav {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--slate-200);
+            padding: 0 var(--spacing-xl);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-lg);
+        }
+
+        .info-nav-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            text-decoration: none;
+        }
+
+        .info-nav-brand .material-symbols-rounded {
+            font-size: 22px;
+            color: var(--primary-600);
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .info-nav-brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--slate-900);
+        }
+
+        .info-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .info-nav-link {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--slate-500);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            transition: all 0.15s ease;
+        }
+
+        .info-nav-link:hover,
+        .info-nav-link.active {
+            color: var(--primary-600);
+            background: var(--primary-50);
+        }
+
+        .info-nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--slate-500);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--slate-200);
+            transition: all 0.15s ease;
+        }
+
+        .info-nav-back:hover {
+            color: var(--slate-900);
+            border-color: var(--slate-300);
+            background: var(--slate-50);
+        }
+
+        .info-nav-back .material-symbols-rounded {
+            font-size: 16px;
+        }
+
+        /* ── Main content area ── */
+        .info-main {
+            flex: 1;
+            max-width: 780px;
+            margin: 0 auto;
+            padding: var(--spacing-3xl) var(--spacing-xl) var(--spacing-3xl);
+            width: 100%;
+        }
+
+        /* ── Section card ── */
+        .info-section {
+            margin-bottom: var(--spacing-3xl);
+            scroll-margin-top: 80px;
+        }
+
+        .info-section-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .info-section-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .info-section-icon.blue  { background: var(--primary-50); color: var(--primary-600); }
+        .info-section-icon.green { background: #f0fdf4; color: #16a34a; }
+        .info-section-icon.amber { background: #fffbeb; color: #d97706; }
+
+        .info-section-icon .material-symbols-rounded {
+            font-size: 22px;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .info-section-heading {
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--slate-900);
+            letter-spacing: -0.02em;
+        }
+
+        .info-divider {
+            border: none;
+            border-top: 1px solid var(--slate-100);
+            margin: 0 0 var(--spacing-xl);
+        }
+
+        /* ── About ── */
+        .about-card {
+            background: white;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .about-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-600), #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .about-avatar .material-symbols-rounded {
+            font-size: 36px;
+            color: white;
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+
+        .about-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 4px;
+        }
+
+        .about-role {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--primary-600);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .about-bio {
+            font-size: 15px;
+            color: var(--slate-600);
+            line-height: 1.75;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .about-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+        }
+
+        .about-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--slate-600);
+            background: var(--slate-100);
+            border: 1px solid var(--slate-200);
+            border-radius: 20px;
+            padding: 4px 12px;
+            letter-spacing: 0.02em;
+        }
+
+        .about-tag .material-symbols-rounded {
+            font-size: 14px;
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+        }
+
+        /* ── Contact ── */
+        .contact-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            background: white;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .contact-item:hover {
+            border-color: var(--primary-300);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .contact-item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .contact-item-icon.mail   { background: #fef3c7; color: #d97706; }
+        .contact-item-icon.github { background: var(--slate-100); color: var(--slate-700); }
+
+        .contact-item-icon .material-symbols-rounded {
+            font-size: 20px;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .contact-item-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .contact-item-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 2px;
+        }
+
+        .contact-item-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--slate-800);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .contact-item-arrow {
+            color: var(--slate-300);
+            flex-shrink: 0;
+        }
+
+        .contact-item-arrow .material-symbols-rounded {
+            font-size: 18px;
+        }
+
+        .contact-item:hover .contact-item-arrow {
+            color: var(--primary-400);
+        }
+
+        /* ── Privacy ── */
+        .privacy-card {
+            background: white;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .privacy-highlight {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .privacy-highlight .material-symbols-rounded {
+            font-size: 22px;
+            color: #16a34a;
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .privacy-highlight-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #166534;
+            line-height: 1.6;
+        }
+
+        .privacy-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-700);
+            margin: var(--spacing-lg) 0 var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .privacy-section-title .material-symbols-rounded {
+            font-size: 16px;
+            color: var(--primary-600);
+            font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+        }
+
+        .privacy-text {
+            font-size: 14px;
+            color: var(--slate-500);
+            line-height: 1.75;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .privacy-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .privacy-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--slate-500);
+            line-height: 1.6;
+        }
+
+        .privacy-list li::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary-400);
+            flex-shrink: 0;
+            margin-top: 8px;
+        }
+
+        /* ── Footer ── */
+        .info-footer {
+            border-top: 1px solid var(--slate-200);
+            padding: var(--spacing-lg) var(--spacing-xl);
+            text-align: center;
+        }
+
+        .info-footer p {
+            font-size: 12px;
+            color: var(--slate-400);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .info-nav {
+                padding: 0 var(--spacing-md);
+            }
+
+            .info-nav-links {
+                display: none;
+            }
+
+            .info-main {
+                padding: var(--spacing-2xl) var(--spacing-md);
+            }
+
+            .about-card,
+            .privacy-card {
+                padding: var(--spacing-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="info-page">
+
+    <!-- NAV -->
+    <nav class="info-nav">
+        <a href="index.html" class="info-nav-brand">
+            <span class="material-symbols-rounded">picture_as_pdf</span>
+            <span class="info-nav-brand-name">PDF Splitter</span>
+        </a>
+        <div class="info-nav-links">
+            <a href="#about"   class="info-nav-link">About</a>
+            <a href="#contact" class="info-nav-link">Contact</a>
+            <a href="#privacy" class="info-nav-link">Privacy</a>
+        </div>
+        <a href="index.html" class="info-nav-back">
+            <span class="material-symbols-rounded">arrow_back</span>
+            Back to app
+        </a>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="info-main">
+
+        <!-- ── ABOUT ── -->
+        <section id="about" class="info-section">
+            <div class="info-section-header">
+                <div class="info-section-icon blue">
+                    <span class="material-symbols-rounded">person</span>
+                </div>
+                <h2 class="info-section-heading">About</h2>
+            </div>
+            <hr class="info-divider">
+
+            <div class="about-card">
+                <div class="about-avatar">
+                    <span class="material-symbols-rounded">person</span>
+                </div>
+                <p class="about-name">Romel Gonzaga</p>
+                <p class="about-role">Web Developer &amp; Tech Enthusiast</p>
+                <p class="about-bio">
+                    A curious mind always exploring what technology can do. Passionate about building clean, useful tools for everyday tasks — PDF Splitter is one of them. Constantly learning, always shipping.
+                </p>
+                <div class="about-tags">
+                    <span class="about-tag">
+                        <span class="material-symbols-rounded">code</span>
+                        Web Development
+                    </span>
+                    <span class="about-tag">
+                        <span class="material-symbols-rounded">memory</span>
+                        Tech Enthusiast
+                    </span>
+                    <span class="about-tag">
+                        <span class="material-symbols-rounded">school</span>
+                        Lifelong Learner
+                    </span>
+                    <span class="about-tag">
+                        <span class="material-symbols-rounded">build</span>
+                        Builder
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── CONTACT ── -->
+        <section id="contact" class="info-section">
+            <div class="info-section-header">
+                <div class="info-section-icon amber">
+                    <span class="material-symbols-rounded">mail</span>
+                </div>
+                <h2 class="info-section-heading">Contact</h2>
+            </div>
+            <hr class="info-divider">
+
+            <div class="contact-list">
+                <a href="mailto:gonzagaromel@gmail.com" class="contact-item">
+                    <div class="contact-item-icon mail">
+                        <span class="material-symbols-rounded">mail</span>
+                    </div>
+                    <div class="contact-item-body">
+                        <p class="contact-item-label">Email</p>
+                        <p class="contact-item-value">gonzagaromel@gmail.com</p>
+                    </div>
+                    <div class="contact-item-arrow">
+                        <span class="material-symbols-rounded">open_in_new</span>
+                    </div>
+                </a>
+
+                <a href="https://github.com/rgonzaga19" target="_blank" rel="noopener noreferrer" class="contact-item">
+                    <div class="contact-item-icon github">
+                        <span class="material-symbols-rounded">code</span>
+                    </div>
+                    <div class="contact-item-body">
+                        <p class="contact-item-label">GitHub</p>
+                        <p class="contact-item-value">github.com/rgonzaga19</p>
+                    </div>
+                    <div class="contact-item-arrow">
+                        <span class="material-symbols-rounded">open_in_new</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- ── PRIVACY ── -->
+        <section id="privacy" class="info-section">
+            <div class="info-section-header">
+                <div class="info-section-icon green">
+                    <span class="material-symbols-rounded">lock</span>
+                </div>
+                <h2 class="info-section-heading">Privacy Policy</h2>
+            </div>
+            <hr class="info-divider">
+
+            <div class="privacy-card">
+
+                <div class="privacy-highlight">
+                    <span class="material-symbols-rounded">verified_user</span>
+                    <p class="privacy-highlight-text">
+                        Your files never leave your device. All PDF processing runs entirely in your browser — no uploads, no servers, no cloud.
+                    </p>
+                </div>
+
+                <p class="privacy-section-title">
+                    <span class="material-symbols-rounded">folder_open</span>
+                    File Handling
+                </p>
+                <p class="privacy-text">
+                    When you open a PDF in PDF Splitter, the file is read directly by your browser using the built-in File API. It is processed in memory using PDF.js and pdf-lib — two open-source libraries that run locally. The file is never transmitted over the internet.
+                </p>
+
+                <p class="privacy-section-title">
+                    <span class="material-symbols-rounded">storage</span>
+                    Data Storage
+                </p>
+                <ul class="privacy-list">
+                    <li>No cookies are set by this application.</li>
+                    <li>No local storage or session storage is used to persist your files.</li>
+                    <li>All data is discarded the moment you close or refresh the tab.</li>
+                    <li>No analytics, trackers, or third-party scripts collect your behaviour.</li>
+                </ul>
+
+                <p class="privacy-section-title">
+                    <span class="material-symbols-rounded">public</span>
+                    Third-party Resources
+                </p>
+                <p class="privacy-text">
+                    This app loads fonts from Google Fonts and icons from Google's Material Symbols CDN. These requests are standard browser fetches and do not include any of your PDF content. If you prefer full offline use, these can be self-hosted.
+                </p>
+
+                <p class="privacy-section-title">
+                    <span class="material-symbols-rounded">update</span>
+                    Policy Updates
+                </p>
+                <p class="privacy-text">
+                    This policy may be updated to reflect changes in the application. The version number in the footer reflects the current release. Last updated: June 2026.
+                </p>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="info-footer">
+        <p>&copy; 2026 PDF Splitter v1.0.3 &mdash; Developed by Romel Gonzaga</p>
+    </footer>
+
+</div>
+
+<script>
+    // Highlight active nav link based on scroll position
+    const sections = document.querySelectorAll('.info-section');
+    const navLinks = document.querySelectorAll('.info-nav-link');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(link => link.classList.remove('active'));
+                const active = document.querySelector(`.info-nav-link[href="#${entry.target.id}"]`);
+                if (active) active.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

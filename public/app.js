@@ -17,7 +17,18 @@ const nextPreviewBtn = document.getElementById("nextPreviewBtn");
 const rotatePreviewBtn = document.getElementById("rotatePreviewBtn");
 const successMessage = document.getElementById("successMessage");
 const successOkBtn = document.getElementById("successOkBtn");
-const contentWrapper = document.getElementById("contentWrapper");
+const landingPage = document.getElementById("landingPage");
+const editorPage = document.getElementById("editorPage");
+
+function showEditorPage() {
+    landingPage.style.display = "none";
+    editorPage.style.display = "flex";
+}
+
+function showLandingPage() {
+    editorPage.style.display = "none";
+    landingPage.style.display = "block";
+}
 
 const loadedPdfs = [];
 const pageOrder = [];
@@ -649,6 +660,9 @@ splitBtn.addEventListener("click", async () => {
     const zip = new JSZip();
     const boundaries = [0, ...validSplitPoints, totalPages];
 
+    // Derive base name from the first uploaded file, stripping the .pdf extension
+    const baseName = uploadedFiles[0].name.replace(/\.pdf$/i, '');
+
     for (let i = 0; i < boundaries.length - 1; i++) {
         const start = boundaries[i];
         const end = boundaries[i + 1];
@@ -664,7 +678,7 @@ splitBtn.addEventListener("click", async () => {
         copiedPages.forEach(page => newPdf.addPage(page));
 
         const pdfBytes = await newPdf.save();
-        zip.file(`split_${i + 1}.pdf`, pdfBytes);
+        zip.file(`${baseName}(${i + 1}).pdf`, pdfBytes);
     }
 
     const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -672,7 +686,7 @@ splitBtn.addEventListener("click", async () => {
     const a = document.createElement("a");
 
     a.href = zipUrl;
-    a.download = "split-output.zip";
+    a.download = `${baseName}.zip`;
     a.click();
 
     URL.revokeObjectURL(zipUrl);
@@ -705,7 +719,7 @@ function resetAll() {
     // Reset UI
     pagesDiv.innerHTML = "";
     stats.innerHTML = "";
-    contentWrapper.style.display = "none";
+    showLandingPage();
 
     fileLabel.textContent = "No file chosen";
 
@@ -757,8 +771,8 @@ fileInput.addEventListener("change", async (e) => {
     totalLoadedPages += pdf.numPages;
     previewState.totalPages = totalLoadedPages;
 
-    // SHOW CONTENT SECTION WHEN PDF LOADS
-    contentWrapper.style.display = "block";
+    // SHOW EDITOR PAGE WHEN PDF LOADS
+    showEditorPage();
     
     splitBtn.disabled = false;
 
