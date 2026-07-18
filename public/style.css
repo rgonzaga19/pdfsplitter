@@ -155,8 +155,9 @@ body {
 .main-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md) 48px;
+    padding: 0 var(--spacing-md) 24px;
 }
+
 
 /* ============================================
    UPLOAD SECTION
@@ -1097,9 +1098,10 @@ body {
    ============================================ */
 
 .landing-footer {
-    margin-top: var(--spacing-3xl);
+    margin-top: var(--spacing-2xl);
     padding: 0 var(--spacing-md);
 }
+
 
 .footer-inner {
     max-width: 1200px;
