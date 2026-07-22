@@ -155,7 +155,7 @@ body {
 .main-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md) 24px;
+    padding: 0 var(--spacing-md) 0;
 }
 
 
@@ -1098,7 +1098,7 @@ body {
    ============================================ */
 
 .landing-footer {
-    margin-top: var(--spacing-2xl);
+    margin-top: 0;
     padding: 0 var(--spacing-md);
 }
 
