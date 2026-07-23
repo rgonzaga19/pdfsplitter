@@ -495,6 +495,21 @@ body {
     background: var(--slate-100);
 }
 
+/* Icon-only toolbar buttons (Undo/Redo/Cancel scan) */
+.btn-icon-only {
+    padding: 11px;
+    min-width: 44px;
+    gap: 0;
+}
+
+@media (max-width: 640px) {
+    .btn-icon-only {
+        padding: 10px;
+        min-width: 40px;
+    }
+}
+
+
 /* Danger Outline Button (blank-page delete confirmation state) */
 .btn-danger-outline {
     background: var(--danger-50);
@@ -506,8 +521,7 @@ body {
     background: var(--danger-100);
 }
 
-/* Tertiary Button (for modal) */
-.btn-tertiary {
+/* Tertiary Button (for modal) */.btn-tertiary {
     background: transparent;
     color: var(--primary-600);
     border: 1px solid var(--primary-300);

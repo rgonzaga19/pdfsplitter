@@ -11,6 +11,8 @@ const splitBtn = document.getElementById("splitBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 const deleteBlankBtn = document.getElementById("deleteBlankBtn");
 const cancelBlankScanBtn = document.getElementById("cancelBlankScanBtn");
+const undoBtn = document.getElementById("undoBtn");
+const redoBtn = document.getElementById("redoBtn");
 const stats = document.getElementById("stats");
 const fileLabel = document.getElementById("fileLabel");
 const previewCanvas = document.getElementById("previewCanvas");
@@ -212,6 +214,8 @@ function applyRotationToThumbnailForCurrentPage() {
 }
 
 function rotatePreviewCanvas() {
+    pushUndoSnapshot();
+
     previewRotation = (previewRotation + 90) % 360;
 
     // rotate the rendered canvas itself
@@ -219,8 +223,6 @@ function rotatePreviewCanvas() {
 
     applyRotationToThumbnailForCurrentPage();
 }
-
-
 
 function getPageWrappers() {
     return Array.from(pagesDiv.querySelectorAll('.page-wrapper:not(.add-page-wrapper)'));
@@ -298,7 +300,149 @@ function syncPageOrderFromDom() {
     previewState.totalPages = pageOrder.length;
     updateStatsDisplay();
     resetBlankScanState();
+    updateUndoRedoButtons();
 }
+
+/* ============================================
+   UNDO / REDO
+   ============================================ */
+
+const MAX_HISTORY = 50;
+let undoStack = [];
+let redoStack = [];
+let isRestoringHistory = false;
+
+// Captures everything needed to rebuild the page grid: order, source page
+// references, per-page rotation, and split marker positions.
+function captureSnapshot() {
+    return {
+        order: getPageWrappers().map(wrapper => {
+            const entry = pageOrder.find(e => e.id === Number(wrapper.dataset.pageId));
+            if (!entry) return null;
+            return {
+                id: entry.id,
+                pdfIndex: entry.pdfIndex,
+                pageNumber: entry.pageNumber,
+                rotation: getWrapperRotation(wrapper)
+            };
+        }).filter(Boolean),
+        splitPoints: [...splitPoints]
+    };
+}
+
+// Call this BEFORE making any edit (delete, duplicate, rotate, reorder,
+// split-marker toggle, etc.) so the state right before the edit is saved.
+function pushUndoSnapshot() {
+    if (isRestoringHistory) return;
+
+    undoStack.push(captureSnapshot());
+    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    redoStack = [];
+    updateUndoRedoButtons();
+}
+
+// Wipes history entirely — used when a brand new document is loaded or the
+// workspace is cleared, since there's nothing meaningful left to undo into.
+function resetHistory() {
+    undoStack = [];
+    redoStack = [];
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    if (undoBtn) undoBtn.disabled = undoStack.length === 0 || isSplitting || isRestoringHistory;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0 || isSplitting || isRestoringHistory;
+}
+
+async function restoreSnapshot(snapshot) {
+    isRestoringHistory = true;
+    updateUndoRedoButtons();
+
+    try {
+        const existingById = new Map(
+            getPageWrappers().map(w => [Number(w.dataset.pageId), w])
+        );
+        const addPageWrapper = pagesDiv.querySelector('.add-page-wrapper');
+
+        // Detach every current page wrapper. Any wrapper that isn't part of the
+        // snapshot (e.g. a page that gets un-deleted by undo simply never
+        // re-appears, or a page a redo re-adds) is effectively discarded here.
+        getPageWrappers().forEach(w => w.remove());
+
+        pageOrder.length = 0;
+
+        for (const item of snapshot.order) {
+            let wrapper = existingById.get(item.id);
+
+            if (!wrapper) {
+                // Not currently in the DOM (e.g. undoing a delete, or redoing a
+                // duplicate) — rebuild its thumbnail straight from the source PDF.
+                wrapper = await createPageWrapper(item.pdfIndex, item.pageNumber, item.id, item.rotation);
+            }
+
+            setWrapperRotation(wrapper, item.rotation);
+            pageOrder.push({ id: item.id, pdfIndex: item.pdfIndex, pageNumber: item.pageNumber });
+
+            if (addPageWrapper) {
+                pagesDiv.insertBefore(wrapper, addPageWrapper);
+            } else {
+                pagesDiv.appendChild(wrapper);
+            }
+        }
+
+        // Re-apply split marker positions from the snapshot before syncing, since
+        // rebuildSplitPointsFromMarkers() (called via syncPageOrderFromDom below)
+        // derives splitPoints from each marker's "active" class.
+        getPageWrappers().forEach((wrapper, index) => {
+            const marker = wrapper.querySelector('.split-marker');
+            if (!marker) return;
+            marker.classList.toggle('active', snapshot.splitPoints.includes(index + 1));
+        });
+
+        syncPageOrderFromDom();
+    } finally {
+        isRestoringHistory = false;
+        updateUndoRedoButtons();
+    }
+}
+
+async function performUndo() {
+    if (undoStack.length === 0 || isSplitting || isRestoringHistory) return;
+
+    const current = captureSnapshot();
+    const previous = undoStack.pop();
+    redoStack.push(current);
+
+    await restoreSnapshot(previous);
+}
+
+async function performRedo() {
+    if (redoStack.length === 0 || isSplitting || isRestoringHistory) return;
+
+    const current = captureSnapshot();
+    const next = redoStack.pop();
+    undoStack.push(current);
+
+    await restoreSnapshot(next);
+}
+
+if (undoBtn) undoBtn.addEventListener('click', performUndo);
+if (redoBtn) redoBtn.addEventListener('click', performRedo);
+
+document.addEventListener('keydown', (e) => {
+    const isMeta = e.ctrlKey || e.metaKey;
+    if (!isMeta) return;
+
+    const key = e.key.toLowerCase();
+
+    if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        performUndo();
+    } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        performRedo();
+    }
+});
 
 /* ============================================
    BLANK PAGE DETECTION
@@ -415,6 +559,8 @@ if (deleteBlankBtn) {
             cancelBlankScanBtn.style.display = 'inline-flex';
         } else {
             // CONFIRM MODE: remove the marked pages
+            pushUndoSnapshot();
+
             const idsToRemove = blankPageIds;
 
             getPageWrappers().forEach(wrapper => {
@@ -435,19 +581,22 @@ if (cancelBlankScanBtn) {
     });
 }
 
-async function duplicatePageWrapper(sourceWrapper) {
-    const pageIndex = getPageOrderIndex(sourceWrapper);
-    if (pageIndex === -1) return;
+/* ============================================
+   PAGE WRAPPER CREATION (shared by initial load,
+   duplication, and undo/redo restoration)
+   ============================================ */
 
-    const entry = pageOrder[pageIndex];
-    if (!entry) return;
-
-    const srcPdf = loadedPdfs[entry.pdfIndex].pdf;
-    const page = await srcPdf.getPage(entry.pageNumber);
+// Builds a fully-wired page wrapper (thumbnail + view/rotate/duplicate/delete
+// buttons + split marker) for a given source page. Does NOT touch pageOrder or
+// insert into the DOM — the caller does that, since insertion position and
+// pageOrder bookkeeping differ between initial load, duplication, and restore.
+async function createPageWrapper(pdfIndex, pageNumber, pageId, rotation = 0) {
+    const pdf = loadedPdfs[pdfIndex].pdf;
+    const page = await pdf.getPage(pageNumber);
     const viewport = page.getViewport({ scale: 0.20 });
+
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
-
     canvas.width = viewport.width;
     canvas.height = viewport.height;
 
@@ -456,121 +605,126 @@ async function duplicatePageWrapper(sourceWrapper) {
         viewport
     }).promise;
 
-    const newWrapper = document.createElement('div');
-    newWrapper.className = 'page-wrapper';
-    newWrapper.dataset.pageId = pageIdCounter;
+    const wrapper = document.createElement("div");
+    wrapper.className = "page-wrapper";
+    wrapper.dataset.pageId = pageId;
+    enableDragAndDrop(wrapper);
 
-    pageOrder.push({
-        id: pageIdCounter,
-        pdfIndex: entry.pdfIndex,
-        pageNumber: entry.pageNumber
-    });
+    const pageCard = document.createElement("div");
+    pageCard.className = "page-card";
 
-    pageIdCounter += 1;
-    enableDragAndDrop(newWrapper);
+    const actions = document.createElement("div");
+    actions.className = "page-actions";
 
-    const newPageCard = document.createElement('div');
-    newPageCard.className = 'page-card';
+    const viewBtn = document.createElement("button");
+    viewBtn.className = "view-btn";
+    viewBtn.innerHTML = `<span class="material-symbols-rounded">zoom_in</span>`;
 
-    const newActions = document.createElement('div');
-    newActions.className = 'page-actions';
+    const rotateBtn = document.createElement("button");
+    rotateBtn.className = "rotate-btn";
+    rotateBtn.innerHTML = `<span class="material-symbols-rounded">rotate_right</span>`;
 
-    const newViewBtn = document.createElement('button');
-    newViewBtn.className = 'view-btn';
-    newViewBtn.innerHTML =
-        `<span class="material-symbols-rounded">
-        zoom_in
-        </span>`;
+    const duplicateBtn = document.createElement("button");
+    duplicateBtn.className = "duplicate-btn";
+    duplicateBtn.innerHTML = `<span class="material-symbols-rounded">content_copy</span>`;
 
-    const newRotateBtn = document.createElement('button');
-    newRotateBtn.className = 'rotate-btn';
-    newRotateBtn.innerHTML =
-        `<span class="material-symbols-rounded">
-        rotate_right
-        </span>`;
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn";
+    deleteBtn.innerHTML = `<span class="material-symbols-rounded">delete</span>`;
 
-    const newDuplicateBtn = document.createElement('button');
-    newDuplicateBtn.className = 'duplicate-btn';
-    newDuplicateBtn.innerHTML =
-        `<span class="material-symbols-rounded">
-        content_copy
-        </span>`;
+    actions.appendChild(viewBtn);
+    actions.appendChild(rotateBtn);
+    actions.appendChild(duplicateBtn);
+    actions.appendChild(deleteBtn);
 
-    const newDeleteBtn = document.createElement('button');
-    newDeleteBtn.className = 'delete-btn';
-    newDeleteBtn.innerHTML =
-        `<span class="material-symbols-rounded">
-        delete
-        </span>`;
+    pageCard.appendChild(actions);
+    pageCard.appendChild(canvas);
+    wrapper.appendChild(pageCard);
 
-    newActions.appendChild(newViewBtn);
-    newActions.appendChild(newRotateBtn);
-    newActions.appendChild(newDuplicateBtn);
-    newActions.appendChild(newDeleteBtn);
+    const label = document.createElement("p");
+    label.className = "page-number";
+    wrapper.appendChild(label);
 
-    newPageCard.appendChild(newActions);
-    newPageCard.appendChild(canvas);
-    newWrapper.appendChild(newPageCard);
-
-    const newLabel = document.createElement('p');
-    newLabel.className = 'page-number';
-    newLabel.textContent = pageOrder.length;
-    newWrapper.appendChild(newLabel);
-
-    const newMarker = document.createElement('button');
-    newMarker.className = 'split-marker';
-    newMarker.textContent = '\u2702';
-    newMarker.addEventListener('click', (ev) => {
+    const marker = document.createElement("button");
+    marker.className = "split-marker";
+    marker.innerHTML = "✂";
+    marker.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const boundary = getPageOrderIndex(newWrapper) + 1;
+        const boundary = getPageOrderIndex(wrapper) + 1;
         if (boundary <= 0 || boundary >= getPageWrappers().length) return;
+
+        pushUndoSnapshot();
 
         if (splitPoints.includes(boundary)) {
             splitPoints = splitPoints.filter(point => point !== boundary);
-            newMarker.classList.remove('active');
+            marker.classList.remove('active');
         } else {
             splitPoints.push(boundary);
             splitPoints.sort((a, b) => a - b);
-            newMarker.classList.add('active');
+            marker.classList.add('active');
         }
 
         updateStatsDisplay();
     });
-    newWrapper.appendChild(newMarker);
+    wrapper.appendChild(marker);
 
-    setWrapperRotation(newWrapper, getWrapperRotation(sourceWrapper));
+    setWrapperRotation(wrapper, rotation);
 
-    newRotateBtn.addEventListener('click', (ev) => {
+    rotateBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        setWrapperRotation(newWrapper, getWrapperRotation(newWrapper) + 90);
+        pushUndoSnapshot();
+        setWrapperRotation(wrapper, getWrapperRotation(wrapper) + 90);
     });
 
-    newDuplicateBtn.addEventListener('click', async (ev) => {
+    duplicateBtn.addEventListener('click', async (ev) => {
         ev.stopPropagation();
-        await duplicatePageWrapper(newWrapper);
+        pushUndoSnapshot();
+        await duplicatePageWrapper(wrapper);
     });
 
-    newPageCard.addEventListener('click', (ev) => {
-        if (ev.target.closest('.view-btn, .delete-btn, .rotate-btn, .duplicate-btn')) return;
-        const isSelected = newPageCard.classList.contains('selected');
-        document.querySelectorAll('.page-card.selected').forEach(card => card.classList.remove('selected'));
-        if (!isSelected) newPageCard.classList.add('selected');
+    pageCard.addEventListener("click", (ev) => {
+        if (ev.target.closest(".view-btn, .delete-btn, .rotate-btn, .duplicate-btn")) return;
+
+        const isSelected = pageCard.classList.contains("selected");
+        document.querySelectorAll(".page-card.selected").forEach(card => card.classList.remove("selected"));
+        if (!isSelected) pageCard.classList.add("selected");
     });
 
-    newViewBtn.addEventListener('click', async (ev) => {
+    viewBtn.addEventListener("click", async (ev) => {
         ev.stopPropagation();
-        const pIndex = getPageOrderIndex(newWrapper);
+        const pIndex = getPageOrderIndex(wrapper);
         if (pIndex === -1) return;
 
-        previewModal.style.display = 'block';
+        previewModal.style.display = "block";
         await renderPreviewPage(pIndex + 1);
     });
 
-    newDeleteBtn.addEventListener('click', (ev) => {
+    deleteBtn.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        newWrapper.remove();
+        pushUndoSnapshot();
+        wrapper.remove();
         syncPageOrderFromDom();
     });
+
+    return wrapper;
+}
+
+async function duplicatePageWrapper(sourceWrapper) {
+    const pageIndex = getPageOrderIndex(sourceWrapper);
+    if (pageIndex === -1) return;
+
+    const entry = pageOrder[pageIndex];
+    if (!entry) return;
+
+    const pageId = pageIdCounter++;
+    const newWrapper = await createPageWrapper(
+        entry.pdfIndex,
+        entry.pageNumber,
+        pageId,
+        getWrapperRotation(sourceWrapper)
+    );
+
+    pageOrder.push({ id: pageId, pdfIndex: entry.pdfIndex, pageNumber: entry.pageNumber });
 
     if (sourceWrapper.nextSibling) {
         pagesDiv.insertBefore(newWrapper, sourceWrapper.nextSibling);
@@ -578,7 +732,6 @@ async function duplicatePageWrapper(sourceWrapper) {
         pagesDiv.appendChild(newWrapper);
     }
 
-    setWrapperRotation(newWrapper, getWrapperRotation(newWrapper));
     syncPageOrderFromDom();
 }
 
@@ -613,6 +766,8 @@ function enableDragAndDrop(wrapper) {
         e.preventDefault();
         const draggedWrapper = pagesDiv.querySelector(`[data-page-id="${draggedPageId}"]`);
         if (!draggedWrapper || draggedWrapper === wrapper) return;
+
+        pushUndoSnapshot();
         pagesDiv.insertBefore(draggedWrapper, wrapper);
         clearDragState();
         syncPageOrderFromDom();
@@ -630,9 +785,10 @@ pagesDiv.addEventListener('dragover', (e) => {
 pagesDiv.addEventListener('drop', (e) => {
     if (e.target.closest('.page-wrapper:not(.add-page-wrapper)')) return;
     const draggedWrapper = pagesDiv.querySelector(`[data-page-id="${draggedPageId}"]`);
-    const addPageWrapper = pagesDiv.querySelector('.add-page-wrapper');
-    if (draggedWrapper && addPageWrapper) {
-        pagesDiv.insertBefore(draggedWrapper, addPageWrapper);
+    const addPageWrapperEl = pagesDiv.querySelector('.add-page-wrapper');
+    if (draggedWrapper && addPageWrapperEl) {
+        pushUndoSnapshot();
+        pagesDiv.insertBefore(draggedWrapper, addPageWrapperEl);
         clearDragState();
         syncPageOrderFromDom();
     }
@@ -748,6 +904,7 @@ splitBtn.addEventListener("click", async () => {
     isSplitting = true;
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
+    updateUndoRedoButtons();
     splitBtn.innerHTML = '<span class="material-symbols-rounded">schedule</span><span class="btn-label">Splitting...</span>';
 
     try {
@@ -837,6 +994,7 @@ splitBtn.addEventListener("click", async () => {
     isSplitting = false;
     splitBtn.disabled = uploadedFiles.length === 0;
     deleteBlankBtn.disabled = uploadedFiles.length === 0;
+    updateUndoRedoButtons();
     splitBtn.innerHTML = '<span class="material-symbols-rounded">cloud_download</span><span class="btn-label">Split & Download</span>';
     }
 
@@ -867,6 +1025,7 @@ function resetAll() {
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
     resetBlankScanState();
+    resetHistory();
 }
 
 refreshBtn.addEventListener('click', (e) => {
@@ -900,6 +1059,11 @@ fileInput.addEventListener("change", async (e) => {
         loadedPdfs.length = 0;
         totalLoadedPages = 0;
         pagesDiv.innerHTML = "";
+        // Fresh document — nothing meaningful left to undo into.
+        resetHistory();
+    } else {
+        // Let the user undo "adding this file" back to the prior page set.
+        pushUndoSnapshot();
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -909,7 +1073,6 @@ fileInput.addEventListener("change", async (e) => {
     }).promise;
 
     loadedPdfs.push({ pdf, pageCount: pdf.numPages });
-    const startPageNumber = totalLoadedPages;
     totalLoadedPages += pdf.numPages;
     previewState.totalPages = totalLoadedPages;
 
@@ -921,340 +1084,10 @@ fileInput.addEventListener("change", async (e) => {
     resetBlankScanState();
 
     for (let i = 1; i <= pdf.numPages; i++) {
-
-        const page = await pdf.getPage(i);
-
-        const viewport = page.getViewport({
-            scale: 0.20
-        });
-
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({
-            canvasContext: context,
-            viewport
-        }).promise;
-
-       // PAGE WRAPPER
-        const pageWrapper = document.createElement("div");
-        pageWrapper.className = "page-wrapper";
-        pageWrapper.dataset.pageId = pageIdCounter;
-        pageOrder.push({
-            id: pageIdCounter,
-            pdfIndex: loadedPdfs.length - 1,
-            pageNumber: i
-        });
-        pageIdCounter += 1;
-        enableDragAndDrop(pageWrapper);
-
-        // PAGE CARD
-        // PAGE CARD
-        const pageCard = document.createElement("div");
-        pageCard.className = "page-card";
-
-        // ACTION BAR
-        const actions = document.createElement("div");
-        actions.className = "page-actions";
-
-        // VIEW BUTTON
-        const viewBtn = document.createElement("button");
-        viewBtn.className = "view-btn";
-        viewBtn.innerHTML =
-            `<span class="material-symbols-rounded">
-            zoom_in
-            </span>`;
-
-        // ROTATE BUTTON
-        const rotateBtn = document.createElement("button");
-        rotateBtn.className = "rotate-btn";
-        rotateBtn.innerHTML =
-            `<span class="material-symbols-rounded">
-            rotate_right
-            </span>`;
-
-        // DUPLICATE BUTTON
-        const duplicateBtn = document.createElement("button");
-        duplicateBtn.className = "duplicate-btn";
-        duplicateBtn.innerHTML =
-            `<span class="material-symbols-rounded">
-            content_copy
-            </span>`;
-
-        // DELETE BUTTON
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "delete-btn";
-        deleteBtn.innerHTML =
-            `<span class="material-symbols-rounded">
-            delete
-            </span>`;
-
-        actions.appendChild(viewBtn);
-        actions.appendChild(rotateBtn);
-        actions.appendChild(duplicateBtn);
-        actions.appendChild(deleteBtn);
-
-
-
-        pageCard.appendChild(actions);
-        pageCard.appendChild(canvas);
-
-        // Per-page rotation state (for thumbnail)
-        // Start at 0 rotation
-        pageWrapper.dataset.rotation = "0";
-
-        rotateBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-
-            const current = getWrapperRotation(pageWrapper);
-            const next = (current + 90) % 360;
-            setWrapperRotation(pageWrapper, next);
-        });
-
-        pageCard.addEventListener("click", (e) => {
-
-
-
-            if (
-                e.target.closest(
-                    ".view-btn, .delete-btn, .rotate-btn, .duplicate-btn"
-                )
-            ) {
-                return;
-            }
-
-
-
-            const isSelected = pageCard.classList.contains("selected");
-
-            document
-                .querySelectorAll(".page-card.selected")
-                .forEach(card => card.classList.remove("selected"));
-
-            if (!isSelected) {
-                pageCard.classList.add("selected");
-            }
-        });
-
-        viewBtn.addEventListener("click", async (e) => {
-
-            e.stopPropagation();
-            const wrapper = viewBtn.closest('.page-wrapper');
-            const pageIndex = getPageOrderIndex(wrapper);
-            if (pageIndex === -1) return;
-
-            previewModal.style.display = "block";
-            await renderPreviewPage(pageIndex + 1);
-        });
-
-        duplicateBtn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-
-            // Duplicate the PDF page card using the current page wrapper reference
-            const pageIndex = getPageOrderIndex(pageWrapper);
-            if (pageIndex === -1) return;
-
-            const entry = pageOrder[pageIndex];
-            if (!entry) return;
-
-            const srcPdf = loadedPdfs[entry.pdfIndex].pdf;
-            const srcPageNumber = entry.pageNumber;
-
-            const page = await srcPdf.getPage(srcPageNumber);
-            const viewport = page.getViewport({ scale: 0.20 });
-
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-
-            await page.render({
-                canvasContext: context,
-                viewport
-            }).promise;
-
-            // Create new wrapper and card
-            const newWrapper = document.createElement('div');
-            newWrapper.className = 'page-wrapper';
-            newWrapper.dataset.pageId = pageIdCounter;
-
-            pageOrder.push({
-                id: pageIdCounter,
-                pdfIndex: entry.pdfIndex,
-                pageNumber: entry.pageNumber
-            });
-
-            pageIdCounter += 1;
-            enableDragAndDrop(newWrapper);
-
-            const newPageCard = document.createElement('div');
-            newPageCard.className = 'page-card';
-
-            const newActions = document.createElement('div');
-            newActions.className = 'page-actions';
-
-            const newViewBtn = document.createElement('button');
-            newViewBtn.className = 'view-btn';
-            newViewBtn.innerHTML =
-                `<span class="material-symbols-rounded">
-                zoom_in
-                </span>`;
-
-            const newRotateBtn = document.createElement('button');
-            newRotateBtn.className = 'rotate-btn';
-            newRotateBtn.innerHTML =
-                `<span class="material-symbols-rounded">
-                rotate_right
-                </span>`;
-
-            const newDuplicateBtn = document.createElement('button');
-            newDuplicateBtn.className = 'duplicate-btn';
-            newDuplicateBtn.innerHTML =
-                `<span class="material-symbols-rounded">
-                content_copy
-                </span>`;
-
-            const newDeleteBtn = document.createElement('button');
-            newDeleteBtn.className = 'delete-btn';
-            newDeleteBtn.innerHTML =
-                `<span class="material-symbols-rounded">
-                delete
-                </span>`;
-
-            newActions.appendChild(newViewBtn);
-            newActions.appendChild(newRotateBtn);
-            newActions.appendChild(newDuplicateBtn);
-            newActions.appendChild(newDeleteBtn);
-
-            newPageCard.appendChild(newActions);
-            newPageCard.appendChild(canvas);
-
-            newWrapper.appendChild(newPageCard);
-
-            const newLabel = document.createElement('p');
-            newLabel.className = 'page-number';
-            newLabel.textContent = pageOrder.length;
-            newWrapper.appendChild(newLabel);
-
-            // Split marker
-            const newMarker = document.createElement('button');
-            newMarker.className = 'split-marker';
-            newMarker.innerHTML = '✂';
-            newMarker.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                const boundary = getPageOrderIndex(newWrapper) + 1;
-                if (boundary <= 0 || boundary >= getPageWrappers().length) return;
-
-                if (splitPoints.includes(boundary)) {
-                    splitPoints = splitPoints.filter(point => point !== boundary);
-                    newMarker.classList.remove('active');
-                } else {
-                    splitPoints.push(boundary);
-                    splitPoints.sort((a, b) => a - b);
-                    newMarker.classList.add('active');
-                }
-
-                updateStatsDisplay();
-            });
-            newWrapper.appendChild(newMarker);
-
-            // Rotation state
-            setWrapperRotation(newWrapper, getWrapperRotation(pageWrapper));
-
-            newRotateBtn.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-
-                const current = getWrapperRotation(newWrapper);
-                const next = (current + 90) % 360;
-                setWrapperRotation(newWrapper, next);
-            });
-
-            newDuplicateBtn.addEventListener('click', async (ev) => {
-                ev.stopPropagation();
-                await duplicatePageWrapper(newWrapper);
-            });
-
-            // Select behavior
-            newPageCard.addEventListener('click', (ev) => {
-                if (ev.target.closest('.view-btn, .delete-btn, .rotate-btn, .duplicate-btn')) return;
-                const isSelected = newPageCard.classList.contains('selected');
-                document.querySelectorAll('.page-card.selected').forEach(card => card.classList.remove('selected'));
-                if (!isSelected) newPageCard.classList.add('selected');
-            });
-
-            newViewBtn.addEventListener('click', async (ev) => {
-                ev.stopPropagation();
-                const wrapper = newViewBtn.closest('.page-wrapper');
-                const pIndex = getPageOrderIndex(wrapper);
-                if (pIndex === -1) return;
-
-                previewModal.style.display = 'block';
-                await renderPreviewPage(pIndex + 1);
-            });
-
-            newDeleteBtn.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                newWrapper.remove();
-                syncPageOrderFromDom();
-            });
-
-            // Insert duplicate right after the source
-            if (pageWrapper.nextSibling) {
-                pagesDiv.insertBefore(newWrapper, pageWrapper.nextSibling);
-            } else {
-                pagesDiv.appendChild(newWrapper);
-            }
-
-            setWrapperRotation(newWrapper, getWrapperRotation(newWrapper));
-            syncPageOrderFromDom();
-        });
-
-        deleteBtn.addEventListener("click", (e) => {
-
-            e.stopPropagation();
-            const pageIndex = getPageOrderIndex(pageWrapper);
-
-
-
-            pageWrapper.remove();
-            syncPageOrderFromDom();
-        });
-
-
-        pageWrapper.appendChild(pageCard);
-
-        const label = document.createElement("p");
-        label.className = "page-number";
-        label.textContent = pageOrder.length;
-
-        pageWrapper.appendChild(label);
-
-        const marker = document.createElement("button");
-        marker.className = "split-marker";
-        marker.innerHTML = "✂";
-
-        marker.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const boundary = getPageOrderIndex(pageWrapper) + 1;
-            if (boundary <= 0 || boundary >= getPageWrappers().length) return;
-
-            if (splitPoints.includes(boundary)) {
-                splitPoints = splitPoints.filter(point => point !== boundary);
-                marker.classList.remove('active');
-            } else {
-                splitPoints.push(boundary);
-                splitPoints.sort((a, b) => a - b);
-                marker.classList.add('active');
-            }
-
-            updateStatsDisplay();
-        });
-
-        pageWrapper.appendChild(marker);
-        pagesDiv.appendChild(pageWrapper);
+        const pageId = pageIdCounter++;
+        const wrapper = await createPageWrapper(loadedPdfs.length - 1, i, pageId);
+        pageOrder.push({ id: pageId, pdfIndex: loadedPdfs.length - 1, pageNumber: i });
+        pagesDiv.appendChild(wrapper);
     }
 
     const addPageWrapper = document.createElement("div");
@@ -1286,6 +1119,6 @@ fileInput.addEventListener("change", async (e) => {
     });
     pagesDiv.appendChild(addPageWrapper);
 
-    // UPDATE STATS AFTER LOADING
-    updateStatsDisplay();
+    // Rebuild pageOrder/labels/split markers/stats from the final DOM state
+    syncPageOrderFromDom();
 });
