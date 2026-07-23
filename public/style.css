@@ -20,6 +20,10 @@
     
     --success-600: #16a34a;
     --success-50: #f0fdf4;
+
+    --danger-600: #dc2626;
+    --danger-100: #fee2e2;
+    --danger-50: #fef2f2;
     
     /* Typography */
     --font-display: 'Instrument Serif', serif;
@@ -491,6 +495,17 @@ body {
     background: var(--slate-100);
 }
 
+/* Danger Outline Button (blank-page delete confirmation state) */
+.btn-danger-outline {
+    background: var(--danger-50);
+    color: var(--danger-600);
+    border: 1px solid var(--danger-600);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+    background: var(--danger-100);
+}
+
 /* Tertiary Button (for modal) */
 .btn-tertiary {
     background: transparent;
@@ -650,6 +665,31 @@ body {
     outline: 3px solid var(--primary-600);
     outline-offset: 3px;
     border-color: var(--primary-600);
+}
+
+/* BLANK PAGE (detected by "Delete Blank Pages" scan) */
+
+.page-card.blank-detected {
+    outline: 3px dashed var(--danger-600);
+    outline-offset: 3px;
+    border-color: var(--danger-600);
+}
+
+.page-card.blank-detected::before {
+    content: "Blank";
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: var(--danger-600);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 25;
+    pointer-events: none;
 }
 
 /* PAGE NUMBER */

@@ -9,6 +9,8 @@ const uploadZone = document.querySelector(".upload-zone");
 const pagesDiv = document.getElementById("pages");
 const splitBtn = document.getElementById("splitBtn");
 const refreshBtn = document.getElementById("refreshBtn");
+const deleteBlankBtn = document.getElementById("deleteBlankBtn");
+const cancelBlankScanBtn = document.getElementById("cancelBlankScanBtn");
 const stats = document.getElementById("stats");
 const fileLabel = document.getElementById("fileLabel");
 const previewCanvas = document.getElementById("previewCanvas");
@@ -295,6 +297,142 @@ function syncPageOrderFromDom() {
     rebuildSplitPointsFromMarkers();
     previewState.totalPages = pageOrder.length;
     updateStatsDisplay();
+    resetBlankScanState();
+}
+
+/* ============================================
+   BLANK PAGE DETECTION
+   ============================================ */
+
+const DELETE_BLANK_DEFAULT_LABEL =
+    '<span class="material-symbols-rounded">layers_clear</span><span class="btn-label">Delete Blank Pages</span>';
+
+// null = no scan pending. Array of page IDs = scan complete, awaiting user confirmation.
+let blankPageIds = null;
+
+// Reads pixel data straight from the already-rendered thumbnail canvas -
+// no need to re-render the PDF page, so this is cheap even for large documents.
+function analyzeCanvasBlankness(canvas) {
+    if (!canvas || !canvas.width || !canvas.height) {
+        return { isBlank: false, inkRatio: 0 };
+    }
+
+    const ctx = canvas.getContext('2d');
+    let imageData;
+    try {
+        imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    } catch (err) {
+        console.error('Failed to read canvas pixels for blank-page detection', err);
+        return { isBlank: false, inkRatio: 0 };
+    }
+
+    const data = imageData.data;
+    let sum = 0;
+    let sumSq = 0;
+    let inkPixels = 0;
+    let sampled = 0;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const alpha = data[i + 3];
+        if (alpha === 0) continue; // fully transparent pixels don't count as content
+
+        const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        sum += luminance;
+        sumSq += luminance * luminance;
+        sampled += 1;
+
+        if (luminance < 235) inkPixels += 1;
+    }
+
+    if (sampled === 0) {
+        return { isBlank: true, inkRatio: 0 };
+    }
+
+    const mean = sum / sampled;
+    const variance = (sumSq / sampled) - (mean * mean);
+    const inkRatio = inkPixels / sampled;
+
+    // A page counts as blank when it has almost no "ink" coverage AND the page
+    // is overall bright and fairly uniform. The variance/mean checks let a page
+    // with faint scanner noise/specks (common on an otherwise empty back page)
+    // still be recognized as blank instead of being treated as real content.
+    const isBlank = inkRatio <= 0.012 && mean >= 245 && variance <= 120;
+
+    return { isBlank, inkRatio };
+}
+
+function scanForBlankPages() {
+    const wrappers = getPageWrappers();
+    const ids = [];
+
+    wrappers.forEach(wrapper => {
+        const canvas = wrapper.querySelector('canvas');
+        const card = wrapper.querySelector('.page-card');
+        const { isBlank } = analyzeCanvasBlankness(canvas);
+
+        if (isBlank) {
+            ids.push(Number(wrapper.dataset.pageId));
+            if (card) card.classList.add('blank-detected');
+        } else if (card) {
+            card.classList.remove('blank-detected');
+        }
+    });
+
+    return ids;
+}
+
+function resetBlankScanState() {
+    blankPageIds = null;
+    document.querySelectorAll('.page-card.blank-detected').forEach(card => {
+        card.classList.remove('blank-detected');
+    });
+    if (deleteBlankBtn) {
+        deleteBlankBtn.innerHTML = DELETE_BLANK_DEFAULT_LABEL;
+        deleteBlankBtn.classList.remove('btn-danger-outline');
+    }
+    if (cancelBlankScanBtn) {
+        cancelBlankScanBtn.style.display = 'none';
+    }
+}
+
+if (deleteBlankBtn) {
+    deleteBlankBtn.addEventListener('click', () => {
+        if (isSplitting) return;
+
+        if (blankPageIds === null) {
+            // SCAN MODE: detect blank pages and mark them for review
+            const found = scanForBlankPages();
+
+            if (found.length === 0) {
+                alert('No blank pages were detected.');
+                return;
+            }
+
+            blankPageIds = found;
+            deleteBlankBtn.classList.add('btn-danger-outline');
+            deleteBlankBtn.innerHTML =
+                `<span class="material-symbols-rounded">delete_sweep</span><span class="btn-label">Confirm Delete (${found.length})</span>`;
+            cancelBlankScanBtn.style.display = 'inline-flex';
+        } else {
+            // CONFIRM MODE: remove the marked pages
+            const idsToRemove = blankPageIds;
+
+            getPageWrappers().forEach(wrapper => {
+                if (idsToRemove.includes(Number(wrapper.dataset.pageId))) {
+                    wrapper.remove();
+                }
+            });
+
+            resetBlankScanState();
+            syncPageOrderFromDom();
+        }
+    });
+}
+
+if (cancelBlankScanBtn) {
+    cancelBlankScanBtn.addEventListener('click', () => {
+        resetBlankScanState();
+    });
 }
 
 async function duplicatePageWrapper(sourceWrapper) {
@@ -609,6 +747,7 @@ splitBtn.addEventListener("click", async () => {
 
     isSplitting = true;
     splitBtn.disabled = true;
+    deleteBlankBtn.disabled = true;
     splitBtn.innerHTML = '<span class="material-symbols-rounded">schedule</span><span class="btn-label">Splitting...</span>';
 
     try {
@@ -697,6 +836,7 @@ splitBtn.addEventListener("click", async () => {
     } finally {
     isSplitting = false;
     splitBtn.disabled = uploadedFiles.length === 0;
+    deleteBlankBtn.disabled = uploadedFiles.length === 0;
     splitBtn.innerHTML = '<span class="material-symbols-rounded">cloud_download</span><span class="btn-label">Split & Download</span>';
     }
 
@@ -725,6 +865,8 @@ function resetAll() {
 
     // Disable split until a new PDF is loaded
     splitBtn.disabled = true;
+    deleteBlankBtn.disabled = true;
+    resetBlankScanState();
 }
 
 refreshBtn.addEventListener('click', (e) => {
@@ -775,6 +917,8 @@ fileInput.addEventListener("change", async (e) => {
     showEditorPage();
     
     splitBtn.disabled = false;
+    deleteBlankBtn.disabled = false;
+    resetBlankScanState();
 
     for (let i = 1; i <= pdf.numPages; i++) {
 
