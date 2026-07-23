@@ -13,6 +13,8 @@ const deleteBlankBtn = document.getElementById("deleteBlankBtn");
 const cancelBlankScanBtn = document.getElementById("cancelBlankScanBtn");
 const undoBtn = document.getElementById("undoBtn");
 const redoBtn = document.getElementById("redoBtn");
+const gridViewBtn = document.getElementById("gridViewBtn");
+const listViewBtn = document.getElementById("listViewBtn");
 const stats = document.getElementById("stats");
 const fileLabel = document.getElementById("fileLabel");
 const previewCanvas = document.getElementById("previewCanvas");
@@ -33,6 +35,53 @@ function showLandingPage() {
     editorPage.style.display = "none";
     landingPage.style.display = "block";
 }
+
+/* ============================================
+   GRID / LIST VIEW TOGGLE
+   ============================================ */
+
+const PAGES_VIEW_STORAGE_KEY = "pdfSplitterPagesView";
+
+// Re-applies each thumbnail's rotation transform after the card size changes
+// (grid vs list use different --card-w/--card-h), so rotated pages keep the
+// correct fit-to-card scale instead of showing a stale one.
+function refreshAllCanvasRotations() {
+    requestAnimationFrame(() => {
+        getPageWrappers().forEach(wrapper => {
+            setWrapperRotation(wrapper, getWrapperRotation(wrapper));
+        });
+    });
+}
+
+function setPagesView(view) {
+    const isList = view === "list";
+
+    pagesDiv.classList.toggle("view-list", isList);
+    if (gridViewBtn) gridViewBtn.classList.toggle("active", !isList);
+    if (listViewBtn) listViewBtn.classList.toggle("active", isList);
+
+    try {
+        localStorage.setItem(PAGES_VIEW_STORAGE_KEY, view);
+    } catch (err) {
+        // localStorage can be unavailable (e.g. private browsing) - not critical
+    }
+
+    refreshAllCanvasRotations();
+}
+
+if (gridViewBtn) gridViewBtn.addEventListener("click", () => setPagesView("grid"));
+if (listViewBtn) listViewBtn.addEventListener("click", () => setPagesView("list"));
+
+// Restore the last view the user picked, defaulting to grid.
+(function initPagesView() {
+    let savedView = "grid";
+    try {
+        savedView = localStorage.getItem(PAGES_VIEW_STORAGE_KEY) || "grid";
+    } catch (err) {
+        savedView = "grid";
+    }
+    setPagesView(savedView);
+})();
 
 const loadedPdfs = [];
 const pageOrder = [];
@@ -454,6 +503,35 @@ const DELETE_BLANK_DEFAULT_LABEL =
 // null = no scan pending. Array of page IDs = scan complete, awaiting user confirmation.
 let blankPageIds = null;
 
+// Tunable thresholds — raise/lower these if detection is too aggressive or too lax.
+// DARK_LUMINANCE_CUTOFF:  pixels darker than this count as full-weight "solid ink"
+//                         (real text, signatures, stamps).
+// FAINT_LUMINANCE_CUTOFF: pixels between the two cutoffs count as faint marks
+//                         (scanner shading, light smudges, staple/edge shadows)
+//                         and are weighted lightly so a few of them don't
+//                         disqualify an otherwise-empty page.
+// FAINT_WEIGHT:           how much a faint pixel counts toward ink coverage,
+//                         relative to a solid-ink pixel (1.0).
+// INK_RATIO_THRESHOLD:    max weighted ink coverage (as a fraction of the page)
+//                         still considered blank. Raised so a small stray mark,
+//                         corner stamp, thin scan-line, or light watermark
+//                         doesn't block detection.
+// MEAN_BRIGHTNESS_MIN:    page must be at least this bright on average.
+//
+// Note: we deliberately do NOT gate on brightness variance. A single thin,
+// high-contrast line (e.g. a staple shadow or scanner edge artifact) covers
+// only a tiny fraction of the page but creates a large 0-vs-255 spread, which
+// spikes variance even though the page is otherwise empty. The ink-ratio
+// check already accounts for "how much of the page has marks on it" directly,
+// which is a more reliable signal than variance for this case.
+const BLANK_DETECTION = {
+    DARK_LUMINANCE_CUTOFF: 200,
+    FAINT_LUMINANCE_CUTOFF: 242,
+    FAINT_WEIGHT: 0.35,
+    INK_RATIO_THRESHOLD: 0.04,
+    MEAN_BRIGHTNESS_MIN: 215
+};
+
 // Reads pixel data straight from the already-rendered thumbnail canvas -
 // no need to re-render the PDF page, so this is cheap even for large documents.
 function analyzeCanvasBlankness(canvas) {
@@ -470,10 +548,12 @@ function analyzeCanvasBlankness(canvas) {
         return { isBlank: false, inkRatio: 0 };
     }
 
+    const { DARK_LUMINANCE_CUTOFF, FAINT_LUMINANCE_CUTOFF, FAINT_WEIGHT,
+        INK_RATIO_THRESHOLD, MEAN_BRIGHTNESS_MIN } = BLANK_DETECTION;
+
     const data = imageData.data;
     let sum = 0;
-    let sumSq = 0;
-    let inkPixels = 0;
+    let inkWeight = 0;
     let sampled = 0;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -482,10 +562,13 @@ function analyzeCanvasBlankness(canvas) {
 
         const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
         sum += luminance;
-        sumSq += luminance * luminance;
         sampled += 1;
 
-        if (luminance < 235) inkPixels += 1;
+        if (luminance < DARK_LUMINANCE_CUTOFF) {
+            inkWeight += 1; // solid ink — real content
+        } else if (luminance < FAINT_LUMINANCE_CUTOFF) {
+            inkWeight += FAINT_WEIGHT; // faint mark/shading — barely counts
+        }
     }
 
     if (sampled === 0) {
@@ -493,14 +576,13 @@ function analyzeCanvasBlankness(canvas) {
     }
 
     const mean = sum / sampled;
-    const variance = (sumSq / sampled) - (mean * mean);
-    const inkRatio = inkPixels / sampled;
+    const inkRatio = inkWeight / sampled;
 
-    // A page counts as blank when it has almost no "ink" coverage AND the page
-    // is overall bright and fairly uniform. The variance/mean checks let a page
-    // with faint scanner noise/specks (common on an otherwise empty back page)
-    // still be recognized as blank instead of being treated as real content.
-    const isBlank = inkRatio <= 0.012 && mean >= 245 && variance <= 120;
+    // A page counts as blank when its weighted ink coverage is low AND the page
+    // is overall bright. Faint marks (scanner noise, light smudges, thin scan
+    // lines, a small stray stamp) are weighted lightly so they don't, by
+    // themselves, prevent an otherwise-empty page from being flagged.
+    const isBlank = inkRatio <= INK_RATIO_THRESHOLD && mean >= MEAN_BRIGHTNESS_MIN;
 
     return { isBlank, inkRatio };
 }

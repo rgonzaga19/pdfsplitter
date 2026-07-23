@@ -509,6 +509,46 @@ body {
     }
 }
 
+/* VIEW TOGGLE (Grid / List) */
+
+.view-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: var(--slate-100);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    gap: 2px;
+}
+
+.view-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--slate-500);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.view-toggle-btn .material-symbols-rounded {
+    font-size: 20px;
+}
+
+.view-toggle-btn:hover {
+    color: var(--slate-700);
+}
+
+.view-toggle-btn.active {
+    background: white;
+    color: var(--primary-600);
+    box-shadow: var(--shadow-sm);
+}
+
 
 /* Danger Outline Button (blank-page delete confirmation state) */
 .btn-danger-outline {
@@ -562,6 +602,93 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(max(130px, calc((100% - 7 * var(--grid-gap)) / 8)), 1fr));
     gap: var(--grid-gap);
     align-items: start;
+}
+
+/* LIST VIEW — same markup/JS as grid view, laid out as rows instead of a grid */
+
+.pages-grid.view-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    --card-w: 84px;
+    --card-h: 118px;
+}
+
+.pages-grid.view-list .page-wrapper {
+    margin-bottom: 0;
+}
+
+.pages-grid.view-list .page-wrapper:not(.add-page-wrapper) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    margin-bottom: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.pages-grid.view-list .page-wrapper:not(.add-page-wrapper):has(.split-marker.active) {
+    border-bottom: 3px solid var(--primary-600);
+}
+
+.pages-grid.view-list .page-card {
+    flex-shrink: 0;
+    margin-right: var(--spacing-md);
+}
+
+.pages-grid.view-list .page-number {
+    flex: 1;
+    margin-top: 0;
+    text-align: left;
+    font-size: 15px;
+}
+
+.pages-grid.view-list .page-number::before {
+    content: "Page ";
+    color: var(--slate-400);
+    font-weight: 500;
+}
+
+.pages-grid.view-list .split-marker {
+    position: static;
+    transform: none;
+    margin-left: var(--spacing-md);
+    flex-shrink: 0;
+}
+
+.pages-grid.view-list .split-marker::before {
+    display: none;
+}
+
+.pages-grid.view-list .add-page-wrapper {
+    width: 100%;
+}
+
+.pages-grid.view-list .add-page-card {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+}
+
+.pages-grid.view-list .add-page-label {
+    margin-top: 0;
+}
+
+@media (max-width: 640px) {
+    .pages-grid.view-list {
+        --card-w: 64px;
+        --card-h: 90px;
+    }
+
+    .pages-grid.view-list .page-number::before {
+        content: "";
+    }
 }
 
 /* PAGE WRAPPER */
