@@ -559,9 +559,10 @@ body {
 }
 
 .site-nav-brand-icon {
-    font-size: 20px;
-    color: var(--primary-600);
-    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .site-nav-brand-name {
@@ -650,9 +651,10 @@ body {
 }
 
 .editor-logo-icon {
-    font-size: 24px;
-    color: var(--primary-600);
-    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .editor-title {
