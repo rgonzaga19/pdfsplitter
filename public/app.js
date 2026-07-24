@@ -15,6 +15,8 @@ const undoBtn = document.getElementById("undoBtn");
 const redoBtn = document.getElementById("redoBtn");
 const gridViewBtn = document.getElementById("gridViewBtn");
 const listViewBtn = document.getElementById("listViewBtn");
+const pagesLoadingOverlay = document.getElementById("pagesLoadingOverlay");
+const pagesLoadingText = document.getElementById("pagesLoadingText");
 const stats = document.getElementById("stats");
 const fileLabel = document.getElementById("fileLabel");
 const previewCanvas = document.getElementById("previewCanvas");
@@ -87,6 +89,26 @@ const loadedPdfs = [];
 const pageOrder = [];
 let pageIdCounter = 0;
 let isSplitting = false;
+let isLoadingPages = false;
+
+function showPagesLoadingOverlay(total) {
+    isLoadingPages = true;
+    if (pagesLoadingOverlay) pagesLoadingOverlay.style.display = "flex";
+    updatePagesLoadingProgress(0, total);
+    updateUndoRedoButtons();
+}
+
+function updatePagesLoadingProgress(loaded, total) {
+    if (pagesLoadingText) {
+        pagesLoadingText.textContent = `Loading pages... ${loaded} / ${total}`;
+    }
+}
+
+function hidePagesLoadingOverlay() {
+    isLoadingPages = false;
+    if (pagesLoadingOverlay) pagesLoadingOverlay.style.display = "none";
+    updateUndoRedoButtons();
+}
 const previewState = {
     currentIndex: 0,
     totalPages: 0
@@ -399,8 +421,8 @@ function resetHistory() {
 }
 
 function updateUndoRedoButtons() {
-    if (undoBtn) undoBtn.disabled = undoStack.length === 0 || isSplitting || isRestoringHistory;
-    if (redoBtn) redoBtn.disabled = redoStack.length === 0 || isSplitting || isRestoringHistory;
+    if (undoBtn) undoBtn.disabled = undoStack.length === 0 || isSplitting || isRestoringHistory || isLoadingPages;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0 || isSplitting || isRestoringHistory || isLoadingPages;
 }
 
 async function restoreSnapshot(snapshot) {
@@ -930,17 +952,9 @@ uploadZone.addEventListener('drop', (e) => {
         return;
     }
 
-    // Process each PDF file
-    pdfFiles.forEach(file => {
-        // Trigger the file input change event logic for each file
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        fileInput.files = dataTransfer.files;
-        
-        // Manually trigger the change event
-        const event = new Event('change', { bubbles: true });
-        fileInput.dispatchEvent(event);
-    });
+    // Queue each dropped PDF so they load one at a time instead of racing
+    // (loading them concurrently would corrupt shared state like page order).
+    pdfFiles.forEach(file => queueFileLoad(file));
 });
 
 prevPreviewBtn.addEventListener("click", async (e) => {
@@ -1106,6 +1120,8 @@ function resetAll() {
     // Disable split until a new PDF is loaded
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
+    fileInput.disabled = false;
+    hidePagesLoadingOverlay();
     resetBlankScanState();
     resetHistory();
 }
@@ -1119,14 +1135,29 @@ refreshBtn.addEventListener('click', (e) => {
     resetAll();
 });
 
-fileInput.addEventListener("change", async (e) => {
+/* ============================================
+   FILE LOADING (queued so multiple files never race)
+   ============================================ */
 
-    const file = e.target.files[0];
-    if (!file) return;
+// Dropping several PDFs at once (or picking one while another is still
+// loading) used to fire overlapping async loads that stomped on shared state
+// (pageOrder, pageIdCounter, the loading overlay, etc). This queue forces
+// every file to finish loading completely before the next one starts.
+let fileLoadQueue = Promise.resolve();
 
+function queueFileLoad(file) {
+    fileLoadQueue = fileLoadQueue
+        .then(() => handleFileLoad(file))
+        .catch(err => {
+            console.error(`Failed to load "${file.name}"`, err);
+            alert(`Failed to load "${file.name}". It may be corrupted or not a valid PDF.`);
+        });
+    return fileLoadQueue;
+}
+
+async function handleFileLoad(file) {
     fileLabel.textContent = file.name;
     uploadedFiles.push(file);
-    fileInput.value = "";
 
     const existingAddCard = pagesDiv.querySelector(".add-page-wrapper");
     if (existingAddCard) {
@@ -1160,17 +1191,27 @@ fileInput.addEventListener("change", async (e) => {
 
     // SHOW EDITOR PAGE WHEN PDF LOADS
     showEditorPage();
-    
-    splitBtn.disabled = false;
-    deleteBlankBtn.disabled = false;
+
+    splitBtn.disabled = true;
+    deleteBlankBtn.disabled = true;
+    refreshBtn.disabled = true;
+    fileInput.disabled = true;
     resetBlankScanState();
+    showPagesLoadingOverlay(pdf.numPages);
 
     for (let i = 1; i <= pdf.numPages; i++) {
         const pageId = pageIdCounter++;
         const wrapper = await createPageWrapper(loadedPdfs.length - 1, i, pageId);
         pageOrder.push({ id: pageId, pdfIndex: loadedPdfs.length - 1, pageNumber: i });
         pagesDiv.appendChild(wrapper);
+        updatePagesLoadingProgress(i, pdf.numPages);
     }
+
+    hidePagesLoadingOverlay();
+    splitBtn.disabled = false;
+    deleteBlankBtn.disabled = false;
+    refreshBtn.disabled = false;
+    fileInput.disabled = false;
 
     const addPageWrapper = document.createElement("div");
     addPageWrapper.className = "page-wrapper add-page-wrapper";
@@ -1203,4 +1244,12 @@ fileInput.addEventListener("change", async (e) => {
 
     // Rebuild pageOrder/labels/split markers/stats from the final DOM state
     syncPageOrderFromDom();
+}
+
+fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    fileInput.value = "";
+    if (!file) return;
+
+    queueFileLoad(file);
 });

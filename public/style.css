@@ -24,6 +24,18 @@
     --danger-600: #dc2626;
     --danger-100: #fee2e2;
     --danger-50: #fef2f2;
+
+    --amber-600: #d97706;
+    --amber-50: #fffbeb;
+
+    --violet-600: #7c3aed;
+    --violet-50: #f5f3ff;
+
+    --pink-600: #db2777;
+    --pink-50: #fdf2f8;
+
+    --teal-600: #0d9488;
+    --teal-50: #f0fdfa;
     
     /* Typography */
     --font-display: 'Instrument Serif', serif;
@@ -282,11 +294,327 @@ body {
 }
 
 /* ============================================
+   UPCOMING TOOLS SECTION
+   ============================================ */
+
+.upcoming-tools-section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-md) 0;
+    text-align: center;
+}
+
+.upcoming-tools-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--slate-900);
+}
+
+.upcoming-tools-subtitle {
+    font-size: 15px;
+    color: var(--slate-600);
+    margin-top: var(--spacing-xs);
+    margin-bottom: var(--spacing-xl);
+}
+
+.upcoming-tools-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    text-align: left;
+}
+
+.upcoming-tool-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.upcoming-tool-card:hover {
+    border-color: var(--slate-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.upcoming-tool-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    color: white;
+}
+
+.upcoming-tool-icon .material-symbols-rounded {
+    font-size: 22px;
+}
+
+.upcoming-tool-icon-blue { background: var(--primary-600); }
+.upcoming-tool-icon-violet { background: var(--violet-600); }
+.upcoming-tool-icon-amber { background: var(--amber-600); }
+.upcoming-tool-icon-pink { background: var(--pink-600); }
+.upcoming-tool-icon-teal { background: var(--teal-600); }
+.upcoming-tool-icon-red { background: var(--danger-600); }
+
+.upcoming-tool-body {
+    min-width: 0;
+}
+
+.upcoming-tool-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    margin-bottom: 4px;
+}
+
+.upcoming-tool-heading h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate-900);
+}
+
+.coming-soon-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-600);
+    background: var(--primary-50);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.upcoming-tool-body p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--slate-500);
+}
+
+@media (max-width: 900px) {
+    .upcoming-tools-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .upcoming-tools-section {
+        padding: var(--spacing-xl) var(--spacing-md) 0;
+    }
+
+    .upcoming-tools-title {
+        font-size: 22px;
+    }
+
+    .upcoming-tools-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .upcoming-tool-heading {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}
+
+/* ============================================
+   FEATURES SECTION ("Why Choose PDF Splitter?")
+   ============================================ */
+
+.features-section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--spacing-3xl) var(--spacing-md) var(--spacing-2xl);
+}
+
+.features-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--slate-900);
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-2xl) var(--spacing-xl);
+}
+
+.feature-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.feature-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.feature-icon-wrap .material-symbols-rounded {
+    font-size: 24px;
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+.feature-icon-blue {
+    background: var(--primary-50);
+    color: var(--primary-600);
+}
+
+.feature-icon-green {
+    background: var(--success-50);
+    color: var(--success-600);
+}
+
+.feature-icon-amber {
+    background: var(--amber-50);
+    color: var(--amber-600);
+}
+
+.feature-icon-violet {
+    background: var(--violet-50);
+    color: var(--violet-600);
+}
+
+.feature-card-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: var(--spacing-xs);
+}
+
+.feature-card-desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--slate-600);
+}
+
+@media (max-width: 900px) {
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .features-section {
+        padding: var(--spacing-2xl) var(--spacing-md);
+    }
+
+    .features-title {
+        font-size: 22px;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xl);
+    }
+}
+
+/* ============================================
    TWO-PAGE LAYOUT
    ============================================ */
 
 .page-landing {
     min-height: 100vh;
+}
+
+/* ============================================
+   SITE NAV (landing page only)
+   ============================================ */
+
+.site-nav {
+    background: white;
+    border-bottom: 1px solid var(--slate-200);
+    height: 52px;
+    display: flex;
+    align-items: center;
+}
+
+.site-nav-inner {
+    width: 100%;
+    padding: 0 var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+}
+
+.site-nav-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.site-nav-brand-icon {
+    font-size: 20px;
+    color: var(--primary-600);
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+.site-nav-brand-name {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate-900);
+    white-space: nowrap;
+}
+
+.site-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.site-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--slate-500);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.site-nav-link .material-symbols-rounded {
+    font-size: 15px;
+}
+
+.site-nav-link:hover {
+    color: var(--primary-600);
+    background: var(--primary-50);
+}
+
+@media (max-width: 640px) {
+    .site-nav-inner {
+        padding: 0 var(--spacing-md);
+    }
+
+    .site-nav-brand-name {
+        display: none;
+    }
+
+    .site-nav-link .btn-label,
+    .site-nav-link {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
 }
 
 .page-editor {
@@ -382,6 +710,7 @@ body {
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-xl);
+    position: relative;
 }
 
 @media (max-width: 768px) {
@@ -594,6 +923,42 @@ body {
     --card-w: 148px;
     --card-h: 210px;
     --grid-gap: 40px;
+}
+
+/* PAGES LOADING OVERLAY */
+
+.pages-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    z-index: 50;
+}
+
+.loading-spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid var(--slate-200);
+    border-top-color: var(--primary-600);
+    border-radius: 50%;
+    animation: pages-loading-spin 0.8s linear infinite;
+}
+
+@keyframes pages-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--slate-700);
 }
 
 .pages-grid {
