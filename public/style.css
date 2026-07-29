@@ -333,6 +333,13 @@ body {
     border: 1px solid var(--slate-200);
     border-radius: var(--radius-lg);
     transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    text-decoration: none;
+    color: inherit;
+    cursor: default;
+}
+
+a.upcoming-tool-card {
+    cursor: pointer;
 }
 
 .upcoming-tool-card:hover {
@@ -386,6 +393,17 @@ body {
     font-weight: 600;
     color: var(--primary-600);
     background: var(--primary-50);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.available-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--success-600);
+    background: var(--success-50);
     padding: 3px 8px;
     border-radius: 999px;
     white-space: nowrap;
@@ -556,6 +574,7 @@ body {
     align-items: center;
     gap: var(--spacing-sm);
     flex-shrink: 0;
+    text-decoration: none;
 }
 
 .site-nav-brand-icon {
