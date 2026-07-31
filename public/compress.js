@@ -283,6 +283,59 @@ function resolveDict(value) {
     return value instanceof PDFLib.PDFDict ? value : null;
 }
 
+// Some PDF writers (reportlab among them) wrap embedded JPEGs as
+// [/ASCII85Decode, /DCTDecode] or [/ASCIIHexDecode, /DCTDecode] instead of
+// storing the raw JPEG bytes directly. pdf-lib's own decodePDFRawStream()
+// can't help here since it throws on DCTDecode (an image codec, not a
+// stream filter) — so these two text encodings are unwrapped by hand to
+// get at the real JPEG bytes underneath.
+function decodeAscii85(bytes) {
+    let str = new TextDecoder("latin1").decode(bytes).trim();
+    if (str.startsWith("<~")) str = str.slice(2);
+    if (str.endsWith("~>")) str = str.slice(0, -2);
+
+    const out = [];
+    let tuple = [];
+    for (let i = 0; i < str.length; i++) {
+        const c = str[i];
+        if (c === "z" && tuple.length === 0) {
+            out.push(0, 0, 0, 0);
+            continue;
+        }
+        if (c === "\n" || c === "\r" || c === " " || c === "\t") continue;
+        tuple.push(c.charCodeAt(0) - 33);
+        if (tuple.length === 5) {
+            let n = 0;
+            for (const t of tuple) n = n * 85 + t;
+            out.push((n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff);
+            tuple = [];
+        }
+    }
+    if (tuple.length > 0) {
+        const count = tuple.length;
+        while (tuple.length < 5) tuple.push(84);
+        let n = 0;
+        for (const t of tuple) n = n * 85 + t;
+        const bytesOut = [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff];
+        for (let i = 0; i < count - 1; i++) out.push(bytesOut[i]);
+    }
+    return Uint8Array.from(out);
+}
+
+function decodeAsciiHex(bytes) {
+    let str = new TextDecoder("latin1").decode(bytes);
+    const end = str.indexOf(">");
+    if (end !== -1) str = str.slice(0, end);
+    str = str.replace(/\s+/g, "");
+    if (str.length % 2 === 1) str += "0";
+
+    const out = new Uint8Array(str.length / 2);
+    for (let i = 0; i < out.length; i++) {
+        out[i] = parseInt(str.substr(i * 2, 2), 16);
+    }
+    return out;
+}
+
 async function decodeRawBitmapToBlob(stream, dict, width, height) {
     const colorSpaceObj = dict.lookup(PDFLib.PDFName.of("ColorSpace"));
     const bpcObj = dict.lookup(PDFLib.PDFName.of("BitsPerComponent"));
@@ -340,6 +393,11 @@ function getFilterNames(dict) {
     return names;
 }
 
+// Some producers (e.g. reportlab) wrap an image codec filter like DCTDecode in
+// an extra text-safe encoding — most commonly ASCII85Decode or ASCIIHexDecode.
+// recompressImageStream() below unwraps those by hand (decodeAscii85 /
+// decodeAsciiHex) before treating the result as raw JPEG bytes.
+
 async function recompressImageStream(pdfDoc, stream, preset) {
     if (!(stream instanceof PDFLib.PDFStream)) return null;
 
@@ -359,16 +417,28 @@ async function recompressImageStream(pdfDoc, stream, preset) {
     if (!width || !height || width * height < 64 * 64) return null;
 
     const filterNames = getFilterNames(dict);
+    const IMAGE_CODECS = new Set(["/DCTDecode", "/JPXDecode", "/CCITTFaxDecode"]);
+    const codecFilter = filterNames.find(f => IMAGE_CODECS.has(f));
     let sourceBlob = null;
 
     try {
-        if (filterNames.includes("/DCTDecode")) {
-            // Already JPEG-encoded — use the raw bytes directly, no decoding needed.
-            if (!(stream instanceof PDFLib.PDFRawStream)) return null;
-            sourceBlob = new Blob([stream.getContents()], { type: "image/jpeg" });
-        } else if (filterNames.includes("/JPXDecode") || filterNames.includes("/CCITTFaxDecode")) {
+        if (codecFilter === "/JPXDecode" || codecFilter === "/CCITTFaxDecode") {
             // JPEG2000 / fax-encoded images aren't worth re-decoding in-browser.
             return null;
+        } else if (codecFilter === "/DCTDecode") {
+            if (!(stream instanceof PDFLib.PDFRawStream)) return null;
+
+            // Unwrap any text/binary-safe encodings applied on top of the JPEG
+            // (e.g. reportlab wraps images as [/ASCII85Decode, /DCTDecode]).
+            // DCTDecode itself is the image codec and needs no further decoding.
+            let bytes = stream.getContents();
+            for (const f of filterNames) {
+                if (f === "/DCTDecode") break;
+                if (f === "/ASCII85Decode") bytes = decodeAscii85(bytes);
+                else if (f === "/ASCIIHexDecode") bytes = decodeAsciiHex(bytes);
+                else return null; // Flate/LZW-then-DCT is valid but rare; skip rather than risk corruption.
+            }
+            sourceBlob = new Blob([bytes], { type: "image/jpeg" });
         } else {
             sourceBlob = await decodeRawBitmapToBlob(stream, dict, width, height);
         }
@@ -424,7 +494,13 @@ async function compressPdfBytes(arrayBuffer, preset, onProgress) {
                     const stream = pdfDoc.context.lookup(ref);
                     const newRef = await recompressImageStream(pdfDoc, stream, preset);
                     replacementCache.set(cacheKey, newRef);
-                    if (newRef) xObjects.set(name, newRef);
+                    if (newRef) {
+                        xObjects.set(name, newRef);
+                        // Without this, pdf-lib's save() would still serialize the
+                        // now-unreferenced original image — silently bloating the
+                        // file back up even though nothing points to it anymore.
+                        pdfDoc.context.delete(ref);
+                    }
                 }
             }
         }
