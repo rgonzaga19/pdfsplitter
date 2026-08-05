@@ -85,6 +85,29 @@ if (listViewBtn) listViewBtn.addEventListener("click", () => setPagesView("list"
     setPagesView(savedView);
 })();
 
+/* ============================================
+   KEEP THUMBNAILS IN SYNC WITH LAYOUT CHANGES
+   The pages grid re-flows its column count on its own (CSS auto-fill),
+   but each card's rotated-thumbnail scale and the open preview's size
+   are computed from live pixel dimensions, so they go stale unless
+   recalculated after anything that changes those dimensions - a window
+   resize, an orientation change, or the user zooming with Ctrl+scroll /
+   Ctrl+plus/minus (all of which fire the same 'resize' event).
+   ============================================ */
+let layoutResizeTimer = null;
+
+function handleLayoutResize() {
+    refreshAllCanvasRotations();
+    if (previewModal.style.display !== 'none' && previewState.currentIndex > 0) {
+        renderPreviewPage(previewState.currentIndex);
+    }
+}
+
+window.addEventListener('resize', () => {
+    clearTimeout(layoutResizeTimer);
+    layoutResizeTimer = setTimeout(handleLayoutResize, 150);
+});
+
 const loadedPdfs = [];
 const pageOrder = [];
 let pageIdCounter = 0;
@@ -845,6 +868,91 @@ function clearDragState() {
     draggedPageId = null;
     document.querySelectorAll('.page-wrapper.drag-over').forEach(el => el.classList.remove('drag-over'));
     document.querySelectorAll('.page-wrapper.dragging').forEach(el => el.classList.remove('dragging'));
+    stopAutoScroll();
+}
+
+/* ============================================
+   AUTO-SCROLL WHILE DRAGGING PAGES
+   Keeps the pointer's y-position updated during drag and, once it gets
+   near the top/bottom edge of whichever element actually scrolls (the
+   pages container if it has its own scrollbar, otherwise the window),
+   nudges that scroll position every frame. Without this, dragging a
+   page toward the top or bottom edge does nothing once there are more
+   pages than fit on screen, because native HTML5 drag-and-drop has no
+   built-in auto-scroll.
+   ============================================ */
+let autoScrollContainer = null;
+let autoScrollRAF = null;
+let lastDragClientY = null;
+const AUTO_SCROLL_EDGE = 90; // px from the container's edge that triggers scrolling
+const AUTO_SCROLL_MAX_SPEED = 22; // px per frame at the very edge
+
+function getAutoScrollContainer() {
+    let el = pagesDiv.parentElement;
+    while (el && el !== document.body) {
+        const style = window.getComputedStyle(el);
+        const canScrollY = /(auto|scroll)/.test(style.overflowY);
+        if (canScrollY && el.scrollHeight > el.clientHeight) {
+            return el;
+        }
+        el = el.parentElement;
+    }
+    // No scrollable ancestor found - the page itself scrolls.
+    return document.scrollingElement || document.documentElement;
+}
+
+function isWindowScrollContainer(container) {
+    return container === document.scrollingElement || container === document.documentElement;
+}
+
+function autoScrollStep() {
+    if (draggedPageId === null || lastDragClientY === null || !autoScrollContainer) {
+        autoScrollRAF = null;
+        return;
+    }
+
+    const container = autoScrollContainer;
+    const rect = isWindowScrollContainer(container)
+        ? { top: 0, bottom: window.innerHeight }
+        : container.getBoundingClientRect();
+
+    const distFromTop = lastDragClientY - rect.top;
+    const distFromBottom = rect.bottom - lastDragClientY;
+
+    let delta = 0;
+    if (distFromTop >= 0 && distFromTop < AUTO_SCROLL_EDGE) {
+        const strength = 1 - (distFromTop / AUTO_SCROLL_EDGE);
+        delta = -Math.ceil(strength * AUTO_SCROLL_MAX_SPEED);
+    } else if (distFromBottom >= 0 && distFromBottom < AUTO_SCROLL_EDGE) {
+        const strength = 1 - (distFromBottom / AUTO_SCROLL_EDGE);
+        delta = Math.ceil(strength * AUTO_SCROLL_MAX_SPEED);
+    } else if (lastDragClientY < rect.top) {
+        delta = -AUTO_SCROLL_MAX_SPEED;
+    } else if (lastDragClientY > rect.bottom) {
+        delta = AUTO_SCROLL_MAX_SPEED;
+    }
+
+    if (delta !== 0) {
+        container.scrollTop += delta;
+    }
+
+    autoScrollRAF = requestAnimationFrame(autoScrollStep);
+}
+
+function startAutoScroll() {
+    autoScrollContainer = getAutoScrollContainer();
+    if (!autoScrollRAF) {
+        autoScrollRAF = requestAnimationFrame(autoScrollStep);
+    }
+}
+
+function stopAutoScroll() {
+    if (autoScrollRAF) {
+        cancelAnimationFrame(autoScrollRAF);
+        autoScrollRAF = null;
+    }
+    autoScrollContainer = null;
+    lastDragClientY = null;
 }
 
 function enableDragAndDrop(wrapper) {
@@ -855,11 +963,13 @@ function enableDragAndDrop(wrapper) {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', draggedPageId);
         wrapper.classList.add('dragging');
+        startAutoScroll();
     });
 
     wrapper.addEventListener('dragover', (e) => {
         e.preventDefault();
         wrapper.classList.add('drag-over');
+        lastDragClientY = e.clientY;
     });
 
     wrapper.addEventListener('dragleave', () => {
@@ -884,6 +994,9 @@ function enableDragAndDrop(wrapper) {
 
 pagesDiv.addEventListener('dragover', (e) => {
     e.preventDefault();
+    if (draggedPageId !== null) {
+        lastDragClientY = e.clientY;
+    }
 });
 
 pagesDiv.addEventListener('drop', (e) => {

@@ -984,10 +984,15 @@ a.upcoming-tool-card {
 
 .pages-grid {
     display: grid;
-    /* Target 7-8 columns; never narrower than 130px per cell */
-    grid-template-columns: repeat(auto-fill, minmax(max(130px, calc((100% - 7 * var(--grid-gap)) / 8)), 1fr));
+    /* auto-fill keeps fitting more columns of at least --card-w as the
+       available width grows (including when the user zooms out with
+       Ctrl+scroll/Ctrl+minus, which changes the effective CSS viewport
+       width) — each column then stretches up to 190px so cards don't
+       get too sparse when there's just a little extra room. */
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 190px));
     gap: var(--grid-gap);
     align-items: start;
+    justify-content: start;
 }
 
 /* LIST VIEW — same markup/JS as grid view, laid out as rows instead of a grid */
