@@ -670,7 +670,14 @@ if (deleteBlankBtn) {
     deleteBlankBtn.addEventListener('click', () => {
         if (isSplitting) return;
 
-        if (blankPageIds === null) {
+        try {
+            console.log("Delete Blank clicked. isLoadingPages =", isLoadingPages);
+
+            if (isLoadingPages) {
+                alert("Pages are still loading. Please wait until all page thumbnails have finished loading before scanning for blank pages.");
+                return;
+            }
+            if (blankPageIds === null) {
             // SCAN MODE: detect blank pages and mark them for review
             const found = scanForBlankPages();
 
@@ -699,7 +706,11 @@ if (deleteBlankBtn) {
             resetBlankScanState();
             syncPageOrderFromDom();
         }
-    });
+    } catch (err) {
+        console.error("Blank page detection failed:", err);
+        alert("Unable to scan for blank pages. Please wait until all pages finish loading and try again.");
+    }
+});
 }
 
 if (cancelBlankScanBtn) {
@@ -1306,11 +1317,15 @@ async function handleFileLoad(file) {
     showEditorPage();
 
     splitBtn.disabled = true;
-    deleteBlankBtn.disabled = true;
+    // deleteBlankBtn.disabled = true;
+    deleteBlankBtn.disabled = false;
     refreshBtn.disabled = true;
     fileInput.disabled = true;
     resetBlankScanState();
-    showPagesLoadingOverlay(pdf.numPages);
+
+    // showPagesLoadingOverlay(pdf.numPages);
+    isLoadingPages = true;
+    updateUndoRedoButtons();
 
     for (let i = 1; i <= pdf.numPages; i++) {
         const pageId = pageIdCounter++;
@@ -1320,7 +1335,9 @@ async function handleFileLoad(file) {
         updatePagesLoadingProgress(i, pdf.numPages);
     }
 
-    hidePagesLoadingOverlay();
+    isLoadingPages = false;
+    updateUndoRedoButtons();
+
     splitBtn.disabled = false;
     deleteBlankBtn.disabled = false;
     refreshBtn.disabled = false;
