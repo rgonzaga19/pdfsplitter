@@ -15,8 +15,8 @@ const undoBtn = document.getElementById("undoBtn");
 const redoBtn = document.getElementById("redoBtn");
 const gridViewBtn = document.getElementById("gridViewBtn");
 const listViewBtn = document.getElementById("listViewBtn");
-const pagesLoadingOverlay = document.getElementById("pagesLoadingOverlay");
-const pagesLoadingText = document.getElementById("pagesLoadingText");
+const navLoadingIndicator = document.getElementById("navLoadingIndicator");
+const navLoadingText = document.getElementById("navLoadingText");
 const stats = document.getElementById("stats");
 const fileLabel = document.getElementById("fileLabel");
 const previewCanvas = document.getElementById("previewCanvas");
@@ -114,22 +114,24 @@ let pageIdCounter = 0;
 let isSplitting = false;
 let isLoadingPages = false;
 
-function showPagesLoadingOverlay(total) {
+// Shown in the top nav bar (not over the pages grid), so it stays out of
+// the way and the user can keep interacting with pages while more load.
+function showNavLoading(total) {
     isLoadingPages = true;
-    if (pagesLoadingOverlay) pagesLoadingOverlay.style.display = "flex";
-    updatePagesLoadingProgress(0, total);
+    if (navLoadingIndicator) navLoadingIndicator.style.display = "flex";
+    updateNavLoadingProgress(0, total);
     updateUndoRedoButtons();
 }
 
-function updatePagesLoadingProgress(loaded, total) {
-    if (pagesLoadingText) {
-        pagesLoadingText.textContent = `Loading pages... ${loaded} / ${total}`;
+function updateNavLoadingProgress(loaded, total) {
+    if (navLoadingText) {
+        navLoadingText.textContent = `Loading pages… ${loaded} / ${total}`;
     }
 }
 
-function hidePagesLoadingOverlay() {
+function hideNavLoading() {
     isLoadingPages = false;
-    if (pagesLoadingOverlay) pagesLoadingOverlay.style.display = "none";
+    if (navLoadingIndicator) navLoadingIndicator.style.display = "none";
     updateUndoRedoButtons();
 }
 const previewState = {
@@ -1245,7 +1247,7 @@ function resetAll() {
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
     fileInput.disabled = false;
-    hidePagesLoadingOverlay();
+    hideNavLoading();
     resetBlankScanState();
     resetHistory();
 }
@@ -1323,20 +1325,17 @@ async function handleFileLoad(file) {
     fileInput.disabled = true;
     resetBlankScanState();
 
-    // showPagesLoadingOverlay(pdf.numPages);
-    isLoadingPages = true;
-    updateUndoRedoButtons();
+    showNavLoading(pdf.numPages);
 
     for (let i = 1; i <= pdf.numPages; i++) {
         const pageId = pageIdCounter++;
         const wrapper = await createPageWrapper(loadedPdfs.length - 1, i, pageId);
         pageOrder.push({ id: pageId, pdfIndex: loadedPdfs.length - 1, pageNumber: i });
         pagesDiv.appendChild(wrapper);
-        updatePagesLoadingProgress(i, pdf.numPages);
+        updateNavLoadingProgress(i, pdf.numPages);
     }
 
-    isLoadingPages = false;
-    updateUndoRedoButtons();
+    hideNavLoading();
 
     splitBtn.disabled = false;
     deleteBlankBtn.disabled = false;

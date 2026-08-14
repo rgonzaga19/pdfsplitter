@@ -248,6 +248,10 @@
         <div class="editor-header-left">
             <img src="icon-tools.svg" alt="PDF Splitter" class="editor-logo-icon">
             <span class="editor-title">PDF Splitter</span>
+            <div id="navLoadingIndicator" class="nav-loading-indicator" style="display: none;" role="status" aria-live="polite">
+                <span class="nav-loading-spinner"></span>
+                <span id="navLoadingText" class="nav-loading-text">Loading pages…</span>
+            </div>
         </div>
         <div class="editor-header-stats">
             <div id="stats" class="stats-container"></div>
@@ -287,10 +291,6 @@
 
     <!-- PAGES AREA -->
     <div class="editor-body">
-        <div id="pagesLoadingOverlay" class="pages-loading-overlay" style="display: none;">
-            <div class="loading-spinner"></div>
-            <p id="pagesLoadingText" class="loading-text">Loading pages...</p>
-        </div>
         <div id="pages" class="pages-grid"></div>
     </div>
 
