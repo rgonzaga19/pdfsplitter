@@ -125,7 +125,7 @@ function showNavLoading(total) {
 
 function updateNavLoadingProgress(loaded, total) {
     if (navLoadingText) {
-        navLoadingText.textContent = `Loading pages… ${loaded} / ${total}`;
+        navLoadingText.textContent = `Loading pages... ${loaded} / ${total}`;
     }
 }
 
@@ -437,8 +437,6 @@ function pushUndoSnapshot() {
     updateUndoRedoButtons();
 }
 
-// Wipes history entirely — used when a brand new document is loaded or the
-// workspace is cleared, since there's nothing meaningful left to undo into.
 function resetHistory() {
     undoStack = [];
     redoStack = [];
@@ -471,8 +469,6 @@ async function restoreSnapshot(snapshot) {
             let wrapper = existingById.get(item.id);
 
             if (!wrapper) {
-                // Not currently in the DOM (e.g. undoing a delete, or redoing a
-                // duplicate) — rebuild its thumbnail straight from the source PDF.
                 wrapper = await createPageWrapper(item.pdfIndex, item.pageNumber, item.id, item.rotation);
             }
 
@@ -550,27 +546,6 @@ const DELETE_BLANK_DEFAULT_LABEL =
 // null = no scan pending. Array of page IDs = scan complete, awaiting user confirmation.
 let blankPageIds = null;
 
-// Tunable thresholds — raise/lower these if detection is too aggressive or too lax.
-// DARK_LUMINANCE_CUTOFF:  pixels darker than this count as full-weight "solid ink"
-//                         (real text, signatures, stamps).
-// FAINT_LUMINANCE_CUTOFF: pixels between the two cutoffs count as faint marks
-//                         (scanner shading, light smudges, staple/edge shadows)
-//                         and are weighted lightly so a few of them don't
-//                         disqualify an otherwise-empty page.
-// FAINT_WEIGHT:           how much a faint pixel counts toward ink coverage,
-//                         relative to a solid-ink pixel (1.0).
-// INK_RATIO_THRESHOLD:    max weighted ink coverage (as a fraction of the page)
-//                         still considered blank. Raised so a small stray mark,
-//                         corner stamp, thin scan-line, or light watermark
-//                         doesn't block detection.
-// MEAN_BRIGHTNESS_MIN:    page must be at least this bright on average.
-//
-// Note: we deliberately do NOT gate on brightness variance. A single thin,
-// high-contrast line (e.g. a staple shadow or scanner edge artifact) covers
-// only a tiny fraction of the page but creates a large 0-vs-255 spread, which
-// spikes variance even though the page is otherwise empty. The ink-ratio
-// check already accounts for "how much of the page has marks on it" directly,
-// which is a more reliable signal than variance for this case.
 const BLANK_DETECTION = {
     DARK_LUMINANCE_CUTOFF: 200,
     FAINT_LUMINANCE_CUTOFF: 242,
@@ -612,9 +587,9 @@ function analyzeCanvasBlankness(canvas) {
         sampled += 1;
 
         if (luminance < DARK_LUMINANCE_CUTOFF) {
-            inkWeight += 1; // solid ink — real content
+            inkWeight += 1;
         } else if (luminance < FAINT_LUMINANCE_CUTOFF) {
-            inkWeight += FAINT_WEIGHT; // faint mark/shading — barely counts
+            inkWeight += FAINT_WEIGHT;
         }
     }
 
@@ -721,15 +696,6 @@ if (cancelBlankScanBtn) {
     });
 }
 
-/* ============================================
-   PAGE WRAPPER CREATION (shared by initial load,
-   duplication, and undo/redo restoration)
-   ============================================ */
-
-// Builds a fully-wired page wrapper (thumbnail + view/rotate/duplicate/delete
-// buttons + split marker) for a given source page. Does NOT touch pageOrder or
-// insert into the DOM — the caller does that, since insertion position and
-// pageOrder bookkeeping differ between initial load, duplication, and restore.
 async function createPageWrapper(pdfIndex, pageNumber, pageId, rotation = 0) {
     const pdf = loadedPdfs[pdfIndex].pdf;
     const page = await pdf.getPage(pageNumber);
@@ -1064,7 +1030,6 @@ uploadZone.addEventListener('drop', (e) => {
         return;
     }
 
-    // Filter for PDF files only
     const pdfFiles = Array.from(droppedFiles).filter(file => {
         const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
         if (!isPdf) {
@@ -1078,8 +1043,6 @@ uploadZone.addEventListener('drop', (e) => {
         return;
     }
 
-    // Queue each dropped PDF so they load one at a time instead of racing
-    // (loading them concurrently would corrupt shared state like page order).
     pdfFiles.forEach(file => queueFileLoad(file));
 });
 
@@ -1226,7 +1189,6 @@ splitBtn.addEventListener("click", async () => {
 let splitPoints = [];
 
 function resetAll() {
-    // Reset state
     uploadedFiles.length = 0;
     loadedPdfs.length = 0;
     pageOrder.length = 0;
@@ -1236,14 +1198,12 @@ function resetAll() {
     previewState.currentIndex = 0;
     previewState.totalPages = 0;
 
-    // Reset UI
     pagesDiv.innerHTML = "";
     stats.innerHTML = "";
     showLandingPage();
 
     fileLabel.textContent = "No file chosen";
 
-    // Disable split until a new PDF is loaded
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
     fileInput.disabled = false;
@@ -1255,7 +1215,6 @@ function resetAll() {
 refreshBtn.addEventListener('click', (e) => {
     e.preventDefault();
 
-    // Close preview if open
     previewModal.style.display = 'none';
 
     resetAll();
@@ -1315,11 +1274,9 @@ async function handleFileLoad(file) {
     totalLoadedPages += pdf.numPages;
     previewState.totalPages = totalLoadedPages;
 
-    // SHOW EDITOR PAGE WHEN PDF LOADS
     showEditorPage();
 
     splitBtn.disabled = true;
-    // deleteBlankBtn.disabled = true;
     deleteBlankBtn.disabled = false;
     refreshBtn.disabled = true;
     fileInput.disabled = true;
