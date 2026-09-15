@@ -1257,7 +1257,6 @@ async function handleFileLoad(file) {
         loadedPdfs.length = 0;
         totalLoadedPages = 0;
         pagesDiv.innerHTML = "";
-        // Fresh document — nothing meaningful left to undo into.
         resetHistory();
     } else {
         // Let the user undo "adding this file" back to the prior page set.
