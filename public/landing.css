@@ -1,0 +1,97 @@
+/* Landing styles are scoped so the page editor keeps its existing layout. */
+.page-landing {
+    --ink: #243c35;
+    --muted: #66736c;
+    --paper: #f7f6f0;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+}
+.page-landing .site-nav { height: auto; background: transparent; border-bottom: 1px solid #dfe2d8; }
+.page-landing .site-nav-inner { max-width: 1240px; padding: 24px 40px; margin: auto; }
+.page-landing .site-nav-brand-name { color: var(--ink); font-size: 19px; letter-spacing: -.6px; }
+.page-landing .site-nav-link { color: var(--muted); font-size: 13px; }
+.page-landing .site-nav-link:hover { color: var(--ink); background: #e9ede3; }
+.landing-main { max-width: 1240px; margin: auto; padding: 0 40px; }
+.landing-hero { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 70px; padding: 76px 0 66px; }
+.landing-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.7px; display: flex; align-items: center; gap: 9px; }
+.landing-eyebrow > span { height: 7px; width: 7px; border-radius: 50%; background: #718768; }
+.landing-intro h1 { font-family: var(--font-display); font-size: clamp(56px, 6.3vw, 84px); font-weight: 400; letter-spacing: -2.5px; line-height: 1.03; margin: 25px 0 23px; }
+.landing-intro h1 em { color: #67805c; font-weight: 400; }
+.landing-description { max-width: 410px; color: var(--muted); font-size: 15px; line-height: 1.8; }
+.landing-assurances { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 25px; font-size: 11px; }
+.landing-assurances > span { display: flex; align-items: center; gap: 6px; }
+.landing-assurances .material-symbols-rounded { font-size: 16px; color: #67805c; }
+.paper-demo { display: flex; align-items: center; gap: 11px; margin-top: 36px; }
+.demo-sheet { width: 66px; height: 86px; padding: 10px 8px; background: #fffefa; border: 1px solid #d8dbd1; border-radius: 3px; box-shadow: 2px 3px 0 #e6e7de; transform: rotate(-5deg); }
+.demo-sheet small { font-size: 6px; letter-spacing: .7px; display: block; margin-bottom: 9px; }
+.demo-sheet i { display: block; height: 2px; background: currentColor; opacity: .18; margin: 5px 0; }
+.demo-sheet i:nth-of-type(2) { width: 70%; }
+.demo-sheet b { font-size: 8px; font-weight: 500; display: block; margin-top: 9px; }
+.demo-arrow { font-size: 25px; color: #8b9589; margin: 0 4px; }
+.demo-sheet-blue { background: #e6edf0; transform: rotate(3deg); }
+.demo-sheet-peach { background: #f1e3d4; transform: rotate(-3deg); }
+.demo-sheet-green { background: #e5ebdc; transform: rotate(5deg); }
+.landing-upload { background: #fffefa; border: 1px solid #dedfd5; border-radius: 16px; padding: 24px; box-shadow: 0 12px 40px #243c3507; }
+.upload-panel-heading { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; margin-bottom: 20px; }
+.upload-panel-heading .material-symbols-rounded { font-size: 19px; color: #819277; }
+.page-landing .upload-card { position: relative; background: transparent; box-shadow: none; margin: 0; overflow: visible; }
+.page-landing .upload-zone { margin: 0; padding: 35px 16px 26px; border: 1.5px dashed #bdc8b5; border-radius: 10px; background: #f5f7ef; text-align: center; }
+.page-landing .upload-zone:hover, .page-landing .upload-zone.drag-over { background: #eaf0e0; border-color: #45643b; box-shadow: none; transform: none; }
+.landing-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.landing-file-input:focus-visible + .upload-zone { outline: 3px solid #45643b; outline-offset: 5px; }
+.upload-document { position: relative; display: grid; place-items: center; width: 73px; height: 84px; margin-bottom: 23px; background: #fffefa; border: 1px solid #d4dccb; border-radius: 7px; transform: rotate(-7deg); box-shadow: 5px 5px 0 #e1e7d8; }
+.upload-document .material-symbols-rounded { font-size: 35px; color: #7a8d6b; }
+.upload-document small { position: absolute; right: -12px; bottom: 9px; font-size: 9px; font-weight: 700; letter-spacing: .8px; padding: 3px 7px; color: #fff; background: #6d815e; border-radius: 3px; }
+.page-landing .upload-title { color: var(--ink); font-size: 20px; letter-spacing: -.5px; margin-bottom: 6px; }
+.page-landing .upload-subtitle { color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+.choose-files { display: flex; align-items: center; justify-content: space-between; gap: 35px; background: #294b3c; color: white; border-radius: 6px; padding: 13px 21px; font-size: 13px; font-weight: 500; box-shadow: 0 3px 0 #1d392c; }
+.upload-zone:hover .choose-files { background: #365d49; }
+.page-landing .file-label { color: var(--muted); font-size: 10px; margin-top: 16px; overflow-wrap: anywhere; }
+.upload-privacy { display: flex; justify-content: center; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; margin-top: 20px; }
+.upload-privacy .material-symbols-rounded { font-size: 15px; }
+.landing-workflow { display: grid; grid-template-columns: .9fr 2fr; gap: 45px; border-top: 1px solid #dfe2d8; padding: 39px 0 46px; }
+.workflow-heading .landing-eyebrow { font-size: 8px; letter-spacing: 1.2px; color: var(--muted); }
+.workflow-heading h2 { font-family: var(--font-display); font-size: 30px; font-weight: 400; line-height: 1.2; margin-top: 13px; }
+.workflow-steps { display: grid; grid-template-columns: repeat(3, 1fr); list-style: none; gap: 28px; }
+.step-number { color: #77876d; font-size: 11px; font-family: var(--font-mono); }
+.workflow-steps h3 { font-size: 13px; font-weight: 600; margin: 12px 0 7px; }
+.workflow-steps p { font-size: 11px; line-height: 1.8; color: var(--muted); }
+.landing-bottom { max-width: 1160px; margin: auto; border-top: 1px solid #dfe2d8; padding: 25px 0; display: flex; justify-content: space-between; align-items: center; gap: 20px; font-size: 10px; color: var(--muted); }
+.landing-bottom > div { display: flex; flex-direction: column; gap: 3px; }
+.landing-bottom > div strong { color: var(--ink); font-size: 12px; }
+.landing-bottom p strong { font-weight: 500; }
+.landing-bottom a { color: var(--ink); text-decoration: none; }
+.landing-bottom a:hover { text-decoration: underline; }
+.page-landing a:focus-visible { outline: 2px solid #45643b; outline-offset: 5px; }
+@media (max-width: 900px) {
+    .landing-hero { gap: 30px; padding: 50px 0; }
+    .landing-intro h1 { font-size: 60px; }
+    .landing-upload { padding: 18px; }
+    .landing-workflow { grid-template-columns: 1fr; gap: 25px; }
+    .landing-bottom { margin: 0 40px; }
+}
+@media (max-width: 640px) {
+    .page-landing .site-nav-inner { padding: 18px 22px; gap: 12px; flex-wrap: wrap; }
+    .page-landing .site-nav-links { gap: 10px; }
+    .page-landing .site-nav-link { padding: 4px 0; font-size: 11px; }
+    .page-landing .site-nav-link .material-symbols-rounded { display: none; }
+    .page-landing .site-nav-brand-name { display: inline; font-size: 16px; }
+    .landing-main { padding: 0 22px; }
+    .landing-hero { grid-template-columns: 1fr; gap: 32px; padding: 38px 0; }
+    .landing-intro h1 { font-size: clamp(48px, 12vw, 68px); }
+    .landing-eyebrow { font-size: 8px; letter-spacing: 1px; }
+    .landing-description { font-size: 14px; }
+    .paper-demo { margin-top: 25px; }
+    .landing-workflow { padding: 30px 0; }
+    .workflow-steps { grid-template-columns: 1fr; gap: 23px; }
+    .workflow-steps li { padding-left: 37px; position: relative; }
+    .step-number { position: absolute; left: 0; top: 2px; }
+    .workflow-steps h3 { margin-top: 0; }
+    .workflow-steps p { font-size: 12px; }
+    .landing-bottom { margin: 0 22px; flex-wrap: wrap; padding: 22px 0; }
+    .landing-bottom p { order: 3; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .page-landing *, .page-landing *::before, .page-landing *::after { animation: none !important; transition: none !important; }
+}

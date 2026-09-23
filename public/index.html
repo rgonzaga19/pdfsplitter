@@ -8,6 +8,8 @@
     <link rel="icon" href="favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="landing.css">
+    <link rel="stylesheet" href="editor.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
 </head>
@@ -34,88 +36,52 @@
         </div>
     </nav>
 
-    <header class="hero-section">
-        <div class="hero-content">
-            <div class="hero-badge">Private PDF splitting</div>
-            <h1 class="hero-title">Split PDFs with Precision</h1>
-            <p class="hero-subtitle">Choose split points, reorder pages, remove blanks, and download clean PDF batches from your browser.</p>
-        </div>
-    </header>
-
-    <main class="main-container">
-        <section class="upload-section">
-            <div class="upload-card">
-                <input type="file" id="pdfFile" accept=".pdf" multiple hidden>
-                <label for="pdfFile" class="upload-zone">
-                    <div class="upload-icon">
-                        <span class="material-symbols-rounded">description</span>
-                    </div>
-                    <h2 class="upload-title">Choose PDFs to split</h2>
-                    <p class="upload-subtitle">Or drag and drop your files here</p>
-                    <span id="fileLabel" class="file-label">No file chosen</span>
-                </label>
+    <main class="landing-main">
+        <section class="landing-hero" aria-labelledby="landing-title">
+            <div class="landing-intro">
+                <p class="landing-eyebrow"><span></span> A little order for your paperwork</p>
+                <h1 id="landing-title">Big PDFs.<br>Neat little <em>pieces.</em></h1>
+                <p class="landing-description">Keep the pages you need. Split, rearrange, and tidy up your PDFs in one simple workspace.</p>
+                <div class="landing-assurances">
+                    <span><span class="material-symbols-rounded" aria-hidden="true">lock</span>Files stay on your device</span>
+                    <span><span class="material-symbols-rounded" aria-hidden="true">check_circle</span>Free. No sign-up.</span>
+                </div>
+                <div class="paper-demo" aria-hidden="true">
+                    <div class="demo-sheet"><small>YOUR PDF</small><i></i><i></i><i></i><b>01?12</b></div>
+                    <span class="demo-arrow">&#8594;</span>
+                    <div class="demo-sheet demo-sheet-blue"><small>PART 01</small><i></i><i></i><b>01?04</b></div>
+                    <div class="demo-sheet demo-sheet-peach"><small>PART 02</small><i></i><i></i><b>05?08</b></div>
+                    <div class="demo-sheet demo-sheet-green"><small>PART 03</small><i></i><i></i><b>09?12</b></div>
+                </div>
             </div>
+            <section class="landing-upload" aria-labelledby="upload-heading">
+                <div class="upload-panel-heading"><span>LET?S GET STARTED</span><span class="material-symbols-rounded" aria-hidden="true">north_east</span></div>
+                <div class="upload-card">
+                    <input type="file" id="pdfFile" class="landing-file-input" accept=".pdf" multiple aria-label="Choose PDF files">
+                    <label for="pdfFile" class="upload-zone">
+                        <span class="upload-document" aria-hidden="true"><span class="material-symbols-rounded">upload_file</span><small>PDF</small></span>
+                        <h2 id="upload-heading" class="upload-title">Drop your PDFs here</h2>
+                        <p class="upload-subtitle">One file or a whole stack. You choose.</p>
+                        <span class="choose-files">Choose PDF files <span aria-hidden="true">&#8594;</span></span>
+                        <span id="fileLabel" class="file-label" aria-live="polite">No file chosen</span>
+                    </label>
+                </div>
+                <p class="upload-privacy"><span class="material-symbols-rounded" aria-hidden="true">verified_user</span>Processed in your browser. Never uploaded.</p>
+            </section>
         </section>
-
-        <section class="features-section">
-            <h2 class="features-title">Built for clean PDF splitting</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon-wrap feature-icon-blue">
-                        <span class="material-symbols-rounded">lock</span>
-                    </div>
-                    <h3 class="feature-card-title">Private by design</h3>
-                    <p class="feature-card-desc">Your PDF is processed locally in the browser. Files are never uploaded to a server.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon-wrap feature-icon-green">
-                        <span class="material-symbols-rounded">layers_clear</span>
-                    </div>
-                    <h3 class="feature-card-title">Blank page cleanup</h3>
-                    <p class="feature-card-desc">Scan for blank or near-empty pages and remove them before exporting your split files.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon-wrap feature-icon-amber">
-                        <span class="material-symbols-rounded">history</span>
-                    </div>
-                    <h3 class="feature-card-title">Edit confidently</h3>
-                    <p class="feature-card-desc">Reorder, rotate, duplicate, delete, undo, and redo before creating your final ZIP.</p>
-                </div>
-            </div>
+        <section class="landing-workflow" aria-labelledby="workflow-title">
+            <div class="workflow-heading"><p class="landing-eyebrow">LESS PAPERWORK, MORE POSSIBILITY</p><h2 id="workflow-title">From a stack to sorted.<br>In three simple steps.</h2></div>
+            <ol class="workflow-steps">
+                <li><span class="step-number">01</span><h3>Bring your PDFs</h3><p>Select multiple files or drop them right here to open your workspace.</p></li>
+                <li><span class="step-number">02</span><h3>Make them yours</h3><p>Set split points, reorder pages, rotate, or remove blanks. Undo anytime.</p></li>
+                <li><span class="step-number">03</span><h3>Take the tidy version</h3><p>Download your newly split PDFs together in one convenient ZIP file.</p></li>
+            </ol>
         </section>
     </main>
-
-    <footer class="landing-footer">
-        <div class="footer-inner">
-            <hr class="footer-rule">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <span class="material-symbols-rounded footer-brand-icon">picture_as_pdf</span>
-                    <span class="footer-brand-name">PDF Splitter</span>
-                    <span class="footer-version">v1.0.3</span>
-                </div>
-                <div class="footer-meta">
-                    <span>&copy; 2026 PDF Splitter - All rights reserved</span>
-                    <span class="footer-dot">·</span>
-                    <span>Developed by <strong>Romel Gonzaga</strong></span>
-                    <span class="footer-dot">·</span>
-                    <span>Free &amp; open to use</span>
-                </div>
-                <div class="footer-links">
-                    <a href="info.html#about" class="footer-link">
-                        <span class="material-symbols-rounded">info</span>About
-                    </a>
-                    <a href="info.html#privacy" class="footer-link">
-                        <span class="material-symbols-rounded">lock</span>Privacy
-                    </a>
-                    <a href="info.html#contact" class="footer-link">
-                        <span class="material-symbols-rounded">mail</span>Contact
-                    </a>
-                </div>
-            </div>
-            <hr class="footer-rule footer-rule--bottom">
-            <p class="footer-note">All PDF processing happens locally in your browser. Your files are never uploaded to any server.</p>
-        </div>
+    <footer class="landing-bottom">
+        <div><strong>PDF Splitter</strong><span>A small tool for a clearer day.</span></div>
+        <p>&copy; 2026 &middot; Made by <strong>Romel Gonzaga</strong></p>
+        <a href="info.html#privacy">Your privacy matters <span aria-hidden="true">&#8599;</span></a>
     </footer>
 </div>
 
@@ -166,6 +132,10 @@
     </header>
 
     <div class="editor-body">
+        <div class="workspace-heading">
+            <div><p>YOUR PDF WORKSPACE</p><h1>A little order. Page by page.</h1></div>
+            <p>Drag pages to reorder. Use the scissors to set split points.</p>
+        </div>
         <div id="pages" class="pages-grid"></div>
     </div>
 </div>

@@ -1,0 +1,90 @@
+/* Continue the landing palette through the workspace and its dialogs. */
+.page-editor, .modal, .success-message {
+    --primary-50: #eef2e7;
+    --primary-100: #e1e8d8;
+    --primary-200: #cbd7bf;
+    --primary-300: #a9bc99;
+    --primary-400: #81996f;
+    --primary-600: #294b3c;
+    --primary-700: #1d392c;
+    --slate-50: #f7f6f0;
+    --slate-100: #eeeee5;
+    --slate-200: #dfe2d8;
+    --slate-300: #c8cec0;
+    --slate-400: #85917e;
+    --slate-500: #66736c;
+    --slate-600: #526259;
+    --slate-700: #354c40;
+    --slate-900: #243c35;
+    --success-600: #45643b;
+    --success-50: #eef2e7;
+    --shadow-sm: 0 1px 2px #243c3508;
+    --shadow-md: 0 3px 10px #243c3510;
+    --shadow-lg: 0 8px 24px #243c3518;
+    color: var(--slate-900);
+}
+.page-editor { background: var(--slate-50); height: 100dvh; }
+.editor-header {
+    height: auto;
+    min-height: 78px;
+    padding: 16px 32px;
+    gap: 18px;
+    flex-wrap: wrap;
+    background: #fffefa;
+    box-shadow: none;
+}
+.editor-title { font-size: 18px; letter-spacing: -.6px; }
+.editor-header-left { flex-wrap: wrap; }
+.editor-header-stats .stats-container { gap: 20px; }
+.editor-header-stats .stat { gap: 7px; }
+.editor-header-stats .stat-value { font-family: var(--font-display); font-size: 27px; font-weight: 400; }
+.editor-header-stats .stat-label { font-size: 9px; letter-spacing: 1px; }
+.editor-header-actions { flex-wrap: wrap; gap: 8px; }
+.page-editor .btn { border-radius: 6px; font-size: 12px; padding: 10px 14px; gap: 7px; }
+.page-editor .btn-icon-only { padding: 10px; }
+.page-editor .btn-secondary { background: #fffefa; }
+.page-editor .btn-secondary:hover:not(:disabled) { background: var(--primary-50); border-color: var(--primary-300); }
+.page-editor .btn:disabled { opacity: .45; cursor: not-allowed; }
+.page-editor .btn-primary, .success-message .btn-primary { box-shadow: 0 3px 0 #1d392c; }
+.page-editor .btn-primary:hover:not(:disabled), .success-message .btn-primary:hover:not(:disabled) { background: #365d49; transform: none; box-shadow: 0 3px 0 #1d392c; }
+.page-editor .view-toggle { background: #eeeee5; border-radius: 7px; }
+.page-editor .view-toggle-btn.active { background: #fffefa; }
+.editor-body { padding: 30px 36px; }
+.workspace-heading { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--slate-200); }
+.workspace-heading > div > p { font-size: 9px; letter-spacing: 1.6px; font-weight: 600; color: var(--slate-500); margin-bottom: 8px; }
+.workspace-heading h1 { font-family: var(--font-display); font-size: 36px; line-height: 1.15; font-weight: 400; letter-spacing: -.6px; }
+.workspace-heading > p { font-size: 12px; color: var(--slate-500); max-width: 330px; }
+.page-editor .page-card { box-shadow: 2px 4px 0 #e5e6dc, 0 5px 14px #243c3508; }
+.page-editor .page-card:hover { box-shadow: 2px 5px 0 #dce3d3, 0 8px 20px #243c3510; }
+.page-editor .page-number { font-size: 12px; font-weight: 500; }
+.page-editor .page-actions { background: #fffefaf5; }
+.page-editor .add-page-card { background: #f0f3e9; border-color: #bdc8b5; box-shadow: none; }
+.page-editor .add-page-card:hover { background: #e7eedc; border-color: #67805c; }
+.page-editor .add-pdf-btn { background: #fffefa; border-width: 1px; }
+.page-editor .add-page-label { font-size: 10px; letter-spacing: 1px; }
+.page-editor .split-marker { border-color: #fffefa; }
+.page-editor .split-marker.active { box-shadow: 0 0 0 5px #294b3c18, var(--shadow-md); }
+.page-editor .pages-grid.view-list .page-wrapper:not(.add-page-wrapper) { background: #fffefa; box-shadow: none; }
+.page-editor button:focus-visible, .modal button:focus-visible { outline: 2px solid #67805c; outline-offset: 4px; }
+.modal { background: #172c24ed; }
+.success-message { background: #172c2466; }
+.success-message-content { background: #fffefa; border: 1px solid #dfe2d8; box-shadow: 0 20px 60px #172c2433; }
+.success-message-content h2 { font-family: var(--font-display); font-weight: 400; font-size: 36px; }
+@media (max-width: 1100px) {
+    .editor-header-actions { flex-basis: 100%; }
+    .editor-header-stats { justify-content: flex-end; }
+}
+@media (max-width: 640px) {
+    .editor-header { padding: 12px 16px; gap: 10px; }
+    .editor-title { font-size: 16px; }
+    .editor-header-actions { gap: 6px; }
+    .editor-header-stats .stats-container { gap: 14px; }
+    .editor-body { padding: 24px 20px; }
+    .workspace-heading { margin-bottom: 25px; padding-bottom: 20px; }
+    .workspace-heading h1 { font-size: 30px; }
+    .workspace-heading > p { font-size: 11px; }
+    .page-editor .btn { padding: 9px 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .page-editor *, .modal *, .success-message * { transition: none !important; animation: none !important; }
+}
