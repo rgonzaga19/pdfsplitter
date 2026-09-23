@@ -1332,9 +1332,8 @@ async function handleFileLoad(file) {
 }
 
 fileInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
+    const files = Array.from(e.target.files);
     fileInput.value = "";
-    if (!file) return;
 
-    queueFileLoad(file);
+    files.forEach(file => queueFileLoad(file));
 });
