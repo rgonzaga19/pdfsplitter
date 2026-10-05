@@ -1086,6 +1086,7 @@ splitBtn.addEventListener("click", async () => {
         return;
     }
 
+    const baseName = uploadedFiles[0].name.replace(/\.pdf$/i, '');
     isSplitting = true;
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
@@ -1093,6 +1094,23 @@ splitBtn.addEventListener("click", async () => {
     splitBtn.innerHTML = '<span class="material-symbols-rounded">schedule</span><span class="btn-label">Splitting...</span>';
 
     try {
+    let saveHandle = null;
+    if (typeof window.showSaveFilePicker === "function") {
+        try {
+            saveHandle = await window.showSaveFilePicker({
+                suggestedName: `${baseName}.zip`,
+                types: [{
+                    description: "ZIP archive",
+                    accept: { "application/zip": [".zip"] }
+                }]
+            });
+        } catch (err) {
+            if (err.name === "AbortError") return;
+            if (err.name !== "NotAllowedError") throw err;
+            console.warn("Save picker unavailable; falling back to browser download.", err);
+        }
+    }
+
     const sourcePdfs = [];
     for (const file of uploadedFiles) {
         const fileBytes = await file.arrayBuffer();
@@ -1141,9 +1159,6 @@ splitBtn.addEventListener("click", async () => {
     const zip = new JSZip();
     const boundaries = [0, ...validSplitPoints, totalPages];
 
-    // Derive base name from the first uploaded file, stripping the .pdf extension
-    const baseName = uploadedFiles[0].name.replace(/\.pdf$/i, '');
-
     for (let i = 0; i < boundaries.length - 1; i++) {
         const start = boundaries[i];
         const end = boundaries[i + 1];
@@ -1162,15 +1177,24 @@ splitBtn.addEventListener("click", async () => {
         zip.file(`${baseName}(${i + 1}).pdf`, pdfBytes);
     }
 
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-    const zipUrl = URL.createObjectURL(zipBlob);
-    const a = document.createElement("a");
-
-    a.href = zipUrl;
-    a.download = `${baseName}.zip`;
-    a.click();
-
-    URL.revokeObjectURL(zipUrl);
+    const zipBlob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
+    if (saveHandle) {
+        const writable = await saveHandle.createWritable();
+        await writable.write(zipBlob);
+        await writable.close();
+    } else {
+        const zipUrl = URL.createObjectURL(zipBlob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = zipUrl;
+        downloadLink.download = `${baseName}.zip`;
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        window.setTimeout(() => {
+            downloadLink.remove();
+            URL.revokeObjectURL(zipUrl);
+        }, 60_000);
+    }
     showSuccessMessage();
     } catch (err) {
         console.error('Failed to split PDF', err);
