@@ -1106,7 +1106,6 @@ splitBtn.addEventListener("click", async () => {
             });
         } catch (err) {
             if (err.name === "AbortError") return;
-            if (err.name !== "NotAllowedError") throw err;
             console.warn("Save picker unavailable; falling back to browser download.", err);
         }
     }
@@ -1178,11 +1177,19 @@ splitBtn.addEventListener("click", async () => {
     }
 
     const zipBlob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
+    let savedWithPicker = false;
     if (saveHandle) {
-        const writable = await saveHandle.createWritable();
-        await writable.write(zipBlob);
-        await writable.close();
-    } else {
+        try {
+            const writable = await saveHandle.createWritable();
+            await writable.write(zipBlob);
+            await writable.close();
+            savedWithPicker = true;
+        } catch (err) {
+            console.warn("Could not save through the file picker; falling back to browser download.", err);
+        }
+    }
+
+    if (!savedWithPicker) {
         const zipUrl = URL.createObjectURL(zipBlob);
         const downloadLink = document.createElement("a");
         downloadLink.href = zipUrl;
