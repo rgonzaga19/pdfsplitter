@@ -134,7 +134,22 @@
     <div class="editor-body">
         <div class="workspace-heading">
             <div><p>YOUR PDF WORKSPACE</p><h1>A little order. Page by page.</h1></div>
-            <p>Drag pages to reorder. Use the scissors to set split points.</p>
+            <div class="workspace-tools">
+                <p>Drag pages to reorder. Use the scissors to set split points.</p>
+                <form id="splitPatternForm" class="split-pattern-form">
+                    <p class="split-pattern-hint">Group sizes repeat in order.</p>
+                    <div id="splitPatternList" class="split-pattern-list" aria-label="Split patterns">
+                        <div class="split-pattern-row">
+                            <label>Group size <input type="number" min="1" step="1" value="2" aria-label="Pages in this group"> pages</label>
+                            <button class="split-pattern-remove" type="button" aria-label="Remove split pattern" title="Remove pattern">&times;</button>
+                        </div>
+                    </div>
+                    <div class="split-pattern-actions">
+                        <button id="addSplitPatternBtn" class="btn btn-secondary" type="button">Add pattern</button>
+                        <button class="btn btn-secondary" type="submit">Apply patterns</button>
+                    </div>
+                </form>
+            </div>
         </div>
         <div id="pages" class="pages-grid"></div>
     </div>

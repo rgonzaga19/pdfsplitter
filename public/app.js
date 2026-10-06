@@ -18,6 +18,9 @@ const listViewBtn = document.getElementById("listViewBtn");
 const navLoadingIndicator = document.getElementById("navLoadingIndicator");
 const navLoadingText = document.getElementById("navLoadingText");
 const stats = document.getElementById("stats");
+const splitPatternForm = document.getElementById("splitPatternForm");
+const splitPatternList = document.getElementById("splitPatternList");
+const addSplitPatternBtn = document.getElementById("addSplitPatternBtn");
 const fileLabel = document.getElementById("fileLabel");
 const previewCanvas = document.getElementById("previewCanvas");
 const prevPreviewBtn = document.getElementById("prevPreviewBtn");
@@ -364,6 +367,71 @@ function getValidSplitPoints(totalPages) {
     return [...new Set(splitPoints)]
         .filter(point => Number.isInteger(point) && point > 0 && point < totalPages)
         .sort((a, b) => a - b);
+}
+
+if (splitPatternForm) {
+    addSplitPatternBtn?.addEventListener("click", () => {
+        const row = document.createElement("div");
+        row.className = "split-pattern-row";
+        row.innerHTML = '<label>Group size <input type="number" min="1" step="1" value="3" aria-label="Pages in this group"> pages</label><button class="split-pattern-remove" type="button" aria-label="Remove split pattern" title="Remove pattern">&times;</button>';
+        splitPatternList.appendChild(row);
+        row.querySelector("input").focus();
+    });
+
+    splitPatternList?.addEventListener("click", (event) => {
+        const removeButton = event.target.closest(".split-pattern-remove");
+        if (!removeButton) return;
+        removeButton.closest(".split-pattern-row").remove();
+    });
+
+    splitPatternForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const inputs = Array.from(splitPatternList.querySelectorAll("input[type=number]"));
+        const patternSizes = inputs.map(input => Number(input.value));
+        const totalPages = getPageWrappers().length;
+
+        const invalidInputIndex = inputs.findIndex(input => {
+            const value = Number(input.value);
+            return !Number.isInteger(value) || value < 1;
+        });
+        if (invalidInputIndex !== -1) {
+            const invalidInput = inputs[invalidInputIndex];
+            invalidInput.setCustomValidity("Enter a whole number greater than zero.");
+            invalidInput.reportValidity();
+            return;
+        }
+        inputs.forEach(input => input.setCustomValidity(""));
+
+        const patternCycleSize = patternSizes.reduce((total, size) => total + size, 0);
+        if (patternCycleSize > 0 && totalPages % patternCycleSize !== 0) {
+            const remainder = totalPages % patternCycleSize;
+            alert(`The ${totalPages} pages do not fit the ${patternCycleSize}-page pattern cycle. Adjust the pattern sizes or page count so the cycle repeats evenly (currently ${remainder} page${remainder === 1 ? "" : "s"} remain).`);
+            return;
+        }
+        if (totalPages < 2) return;
+
+        pushUndoSnapshot();
+        // Treat the entered values as a repeating sequence of part sizes.
+        // Example: [2, 1, 1, 2, 3] makes parts of 2, 1, 1, 2, 3 pages,
+        // then repeats that sequence until the document ends.
+        const boundaries = new Set();
+        let boundary = 0;
+        let patternIndex = 0;
+        if (patternSizes.length > 0) {
+            while (boundary < totalPages) {
+                boundary += patternSizes[patternIndex % patternSizes.length];
+                if (boundary < totalPages) boundaries.add(boundary);
+                patternIndex += 1;
+            }
+        }
+        splitPoints = [...boundaries].sort((a, b) => a - b);
+        getPageWrappers().forEach((wrapper, index) => {
+            const marker = wrapper.querySelector(".split-marker");
+            const shouldSplit = boundaries.has(index + 1);
+            marker?.classList.toggle("active", shouldSplit);
+        });
+        updateStatsDisplay();
+    });
 }
 
 function updateStatsDisplay() {
