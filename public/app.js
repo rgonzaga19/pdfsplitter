@@ -1148,13 +1148,11 @@ splitBtn.addEventListener("click", async () => {
     const totalPages = pageOrder.length;
     rebuildSplitPointsFromMarkers();
     const validSplitPoints = getValidSplitPoints(totalPages);
-
-    if (validSplitPoints.length === 0) {
-        alert("Please add at least one split marker.");
-        return;
-    }
+    const isSplitDownload = validSplitPoints.length > 0;
 
     const baseName = uploadedFiles[0].name.replace(/\.pdf$/i, '');
+    const outputExtension = isSplitDownload ? "zip" : "pdf";
+    const outputMimeType = isSplitDownload ? "application/zip" : "application/pdf";
     isSplitting = true;
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
@@ -1166,10 +1164,10 @@ splitBtn.addEventListener("click", async () => {
     if (typeof window.showSaveFilePicker === "function") {
         try {
             saveHandle = await window.showSaveFilePicker({
-                suggestedName: `${baseName}.zip`,
+                suggestedName: `${baseName}.${outputExtension}`,
                 types: [{
-                    description: "ZIP archive",
-                    accept: { "application/zip": [".zip"] }
+                    description: isSplitDownload ? "ZIP archive" : "PDF document",
+                    accept: { [outputMimeType]: [`.${outputExtension}`] }
                 }]
             });
         } catch (err) {
@@ -1223,33 +1221,38 @@ splitBtn.addEventListener("click", async () => {
     }
 
 
-    const zip = new JSZip();
-    const boundaries = [0, ...validSplitPoints, totalPages];
+    let outputBlob;
+    if (isSplitDownload) {
+        const zip = new JSZip();
+        const boundaries = [0, ...validSplitPoints, totalPages];
 
-    for (let i = 0; i < boundaries.length - 1; i++) {
-        const start = boundaries[i];
-        const end = boundaries[i + 1];
+        for (let i = 0; i < boundaries.length - 1; i++) {
+            const start = boundaries[i];
+            const end = boundaries[i + 1];
 
-        const newPdf = await PDFLib.PDFDocument.create();
-        const pageIndexes = [];
+            const newPdf = await PDFLib.PDFDocument.create();
+            const pageIndexes = [];
 
-        for (let p = start; p < end; p++) {
-            pageIndexes.push(p);
+            for (let p = start; p < end; p++) {
+                pageIndexes.push(p);
+            }
+
+            const copiedPages = await newPdf.copyPages(mergedPdf, pageIndexes);
+            copiedPages.forEach(page => newPdf.addPage(page));
+
+            const pdfBytes = await newPdf.save();
+            zip.file(`${baseName}(${i + 1}).pdf`, pdfBytes);
         }
-
-        const copiedPages = await newPdf.copyPages(mergedPdf, pageIndexes);
-        copiedPages.forEach(page => newPdf.addPage(page));
-
-        const pdfBytes = await newPdf.save();
-        zip.file(`${baseName}(${i + 1}).pdf`, pdfBytes);
+        outputBlob = await zip.generateAsync({ type: "blob", mimeType: outputMimeType });
+    } else {
+        outputBlob = new Blob([await mergedPdf.save()], { type: outputMimeType });
     }
 
-    const zipBlob = await zip.generateAsync({ type: "blob", mimeType: "application/zip" });
     let savedWithPicker = false;
     if (saveHandle) {
         try {
             const writable = await saveHandle.createWritable();
-            await writable.write(zipBlob);
+            await writable.write(outputBlob);
             await writable.close();
             savedWithPicker = true;
         } catch (err) {
@@ -1258,16 +1261,16 @@ splitBtn.addEventListener("click", async () => {
     }
 
     if (!savedWithPicker) {
-        const zipUrl = URL.createObjectURL(zipBlob);
+        const downloadUrl = URL.createObjectURL(outputBlob);
         const downloadLink = document.createElement("a");
-        downloadLink.href = zipUrl;
-        downloadLink.download = `${baseName}.zip`;
+        downloadLink.href = downloadUrl;
+        downloadLink.download = `${baseName}.${outputExtension}`;
         downloadLink.style.display = "none";
         document.body.appendChild(downloadLink);
         downloadLink.click();
         window.setTimeout(() => {
             downloadLink.remove();
-            URL.revokeObjectURL(zipUrl);
+            URL.revokeObjectURL(downloadUrl);
         }, 60_000);
     }
     showSuccessMessage();
