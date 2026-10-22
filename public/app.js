@@ -1,4 +1,7 @@
 const uploadedFiles = [];
+// Keep an in-memory copy of each PDF's bytes from initial load. A browser File
+// reference can become unreadable if the underlying file is replaced later.
+const uploadedPdfBytes = [];
 let totalLoadedPages = 0;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -1177,9 +1180,8 @@ splitBtn.addEventListener("click", async () => {
     }
 
     const sourcePdfs = [];
-    for (const file of uploadedFiles) {
-        const fileBytes = await file.arrayBuffer();
-        const sourcePdf = await PDFLib.PDFDocument.load(fileBytes);
+    for (let i = 0; i < uploadedFiles.length; i++) {
+        const sourcePdf = await PDFLib.PDFDocument.load(uploadedPdfBytes[i]);
         sourcePdfs.push(sourcePdf);
     }
 
@@ -1292,6 +1294,7 @@ let splitPoints = [];
 
 function resetAll() {
     uploadedFiles.length = 0;
+    uploadedPdfBytes.length = 0;
     loadedPdfs.length = 0;
     pageOrder.length = 0;
     splitPoints = [];
@@ -1344,7 +1347,6 @@ function queueFileLoad(file) {
 
 async function handleFileLoad(file) {
     fileLabel.textContent = file.name;
-    uploadedFiles.push(file);
 
     const existingAddCard = pagesDiv.querySelector(".add-page-wrapper");
     if (existingAddCard) {
@@ -1366,11 +1368,15 @@ async function handleFileLoad(file) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-
+    const exportBytes = new Uint8Array(arrayBuffer).slice();
     const pdf = await pdfjsLib.getDocument({
         data: arrayBuffer
     }).promise;
 
+    // Keep the export source in memory. The original File reference can become
+    // unreadable if its underlying disk file is replaced after selection.
+    uploadedFiles.push(file);
+    uploadedPdfBytes.push(exportBytes);
     loadedPdfs.push({ pdf, pageCount: pdf.numPages });
     totalLoadedPages += pdf.numPages;
     previewState.totalPages = totalLoadedPages;
