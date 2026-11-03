@@ -8,6 +8,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
     "./pdfjs/pdf.worker.min.js";
 
 const fileInput = document.getElementById("pdfFile");
+const addPdfHeaderBtn = document.getElementById("addPdfHeaderBtn");
 const uploadZone = document.querySelector(".upload-zone");
 const pagesDiv = document.getElementById("pages");
 const splitBtn = document.getElementById("splitBtn");
@@ -33,6 +34,12 @@ const successMessage = document.getElementById("successMessage");
 const successOkBtn = document.getElementById("successOkBtn");
 const landingPage = document.getElementById("landingPage");
 const editorPage = document.getElementById("editorPage");
+
+addPdfHeaderBtn.addEventListener("click", () => {
+    if (!fileInput.disabled) {
+        fileInput.click();
+    }
+});
 
 function showEditorPage() {
     landingPage.style.display = "none";
@@ -1312,6 +1319,7 @@ function resetAll() {
     splitBtn.disabled = true;
     deleteBlankBtn.disabled = true;
     fileInput.disabled = false;
+    addPdfHeaderBtn.disabled = false;
     hideNavLoading();
     resetBlankScanState();
     resetHistory();
@@ -1387,6 +1395,7 @@ async function handleFileLoad(file) {
     deleteBlankBtn.disabled = false;
     refreshBtn.disabled = true;
     fileInput.disabled = true;
+    addPdfHeaderBtn.disabled = true;
     resetBlankScanState();
 
     showNavLoading(pdf.numPages);
@@ -1405,6 +1414,7 @@ async function handleFileLoad(file) {
     deleteBlankBtn.disabled = false;
     refreshBtn.disabled = false;
     fileInput.disabled = false;
+    addPdfHeaderBtn.disabled = false;
 
     const addPageWrapper = document.createElement("div");
     addPageWrapper.className = "page-wrapper add-page-wrapper";
