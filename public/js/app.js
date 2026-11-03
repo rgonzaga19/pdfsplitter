@@ -5,7 +5,7 @@ const uploadedPdfBytes = [];
 let totalLoadedPages = 0;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "./pdfjs/pdf.worker.min.js";
+    "./vendor/pdfjs/pdf.worker.min.js";
 
 const fileInput = document.getElementById("pdfFile");
 const addPdfHeaderBtn = document.getElementById("addPdfHeaderBtn");
